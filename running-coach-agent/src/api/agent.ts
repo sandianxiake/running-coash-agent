@@ -13,8 +13,8 @@ export interface ChatOptions {
 }
 
 export interface Message {
-  role: 'system' | 'user' | 'assistant'
-  content: string
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content: string | null
 }
 
 export interface ToolCall {

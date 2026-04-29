@@ -1,5 +1,5 @@
 // ============================================
-// Agent Core - 智能体核心
+// Agent Core - 智能体核心（支持流式输出）
 // ============================================
 
 import type {
@@ -8,19 +8,17 @@ import type {
   AgentResponse,
   Message,
   ToolCall,
-  ToolResult,
-  Plan,
-  Task
+  ToolResult
 } from './types'
 import { toolRegistry } from './tools'
 import { MemoryManager } from './memory'
-import { chatCompletion } from '@/api/agent'
+import { chatCompletion, chatCompletionStream, type Message as ApiMessage } from '@/api/agent'
 
 // 默认系统提示词
 const DEFAULT_SYSTEM_PROMPT = `你是「跑步教练」，一个专业、耐心、科学的 AI 跑步教练。
 
 ## 你的能力
-1. **专业跑步知识**：掌握跑步训练、运动生理、营养补给、伤痛预防等专业知识
+1. **专业跑步知识**：掌握跑步训练、运动生理、营养补给、伤痛预防等专业知识，可以搜索最新网络资源
 2. **个性化指导**：根据用户的年龄、体能、目标制定专属训练计划
 3. **数据分析**：分析跑步数据，提供配速、心率、训练负荷等分析建议
 4. **目标追踪**：帮助用户设定和达成跑步目标
@@ -36,83 +34,19 @@ const DEFAULT_SYSTEM_PROMPT = `你是「跑步教练」，一个专业、耐心�
 1. 先理解用户的意图和需求
 2. 必要时调用工具获取相关信息（如跑步记录、知识库）
 3. 结合上下文给出专业、个性化的回答
-4. 回答要简洁有条理，避免长篇大论
+4. 回答要简洁有条理，使用表情符号增加可读性
 
 ## 记住
 - 你是教练，不是销售，不要推销任何产品
 - 尊重用户的隐私和时间
-- 如果不确定某事，坦诚告知，不要瞎编`
-
-// ----------------------
-// 任务规划器
-// ----------------------
-class TaskPlanner {
-  private plans: Map<string, Plan> = new Map()
-
-  // 创建计划
-  createPlan(goal: string, tasks: string[]): Plan {
-    const plan: Plan = {
-      id: `plan_${Date.now()}`,
-      goal,
-      tasks: tasks.map((desc, i) => ({
-        id: `task_${i}`,
-        description: desc,
-        status: 'pending',
-        dependencies: []
-      })),
-      status: 'planning',
-      createdAt: Date.now()
-    }
-    
-    this.plans.set(plan.id, plan)
-    return plan
-  }
-
-  // 获取计划
-  getPlan(id: string): Plan | undefined {
-    return this.plans.get(id)
-  }
-
-  // 执行下一个任务
-  getNextTask(planId: string): Task | undefined {
-    const plan = this.plans.get(planId)
-    if (!plan) return undefined
-
-    return plan.tasks.find(t => 
-      t.status === 'pending' && 
-      t.dependencies.every(depId => {
-        const dep = plan.tasks.find(task => task.id === depId)
-        return dep?.status === 'completed'
-      })
-    )
-  }
-
-  // 更新任务状态
-  updateTask(planId: string, taskId: string, updates: Partial<Task>): void {
-    const plan = this.plans.get(planId)
-    if (!plan) return
-
-    const task = plan.tasks.find(t => t.id === taskId)
-    if (task) {
-      Object.assign(task, updates)
-    }
-  }
-
-  // 检查计划是否完成
-  isPlanComplete(planId: string): boolean {
-    const plan = this.plans.get(planId)
-    if (!plan) return false
-
-    return plan.tasks.every(t => t.status === 'completed' || t.status === 'failed')
-  }
-}
+- 如果不确定某事，坦诚告知，不要瞎编
+- 可以使用网络搜索获取最新的跑步资讯和科学知识`
 
 // ----------------------
 // 智能体核心
 // ----------------------
 export class RunningCoachAgent {
   private context: AgentContext
-  private planner: TaskPlanner
   private memory: MemoryManager
 
   constructor(config: Partial<AgentConfig> = {}) {
@@ -126,7 +60,6 @@ export class RunningCoachAgent {
     }
 
     this.memory = new MemoryManager()
-    this.planner = new TaskPlanner()
     
     this.context = {
       userId: 'default_user',
@@ -142,7 +75,6 @@ export class RunningCoachAgent {
 
   // 注册工具
   private registerTools(): void {
-    // 动态导入所有工具
     import('./tools').then(({ 
       ragTool, 
       recordsTool, 
@@ -172,9 +104,37 @@ export class RunningCoachAgent {
     })
   }
 
-  // 处理用户消息
+  // 获取上下文中的工具
+  getTools() {
+    return toolRegistry.getAll()
+  }
+
+  // 构建 API 消息
+  private buildMessages(): ApiMessage[] {
+    const messages: ApiMessage[] = []
+    
+    // 添加系统提示词
+    messages.push({
+      role: 'system',
+      content: this.context.config.systemPrompt || DEFAULT_SYSTEM_PROMPT
+    })
+    
+    // 添加记忆中的对话历史
+    const history = this.context.memory.shortTerm.getConversation()
+    for (const msg of history) {
+      if (msg.role !== 'system') {
+        messages.push({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        })
+      }
+    }
+    
+    return messages
+  }
+
+  // 处理用户消息（普通模式）
   async process(userMessage: string): Promise<AgentResponse> {
-    const iterations: number = 0
     const toolCalls: ToolCall[] = []
     const toolResults: ToolResult[] = []
 
@@ -201,71 +161,69 @@ export class RunningCoachAgent {
         }
       )
 
-      // 4. 解析响应
       const choice = response.choices[0]
       const assistantMessage = choice.message
 
       // 检查是否有工具调用
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
         // 执行工具调用
-        for (const toolCall of assistantMessage.tool_calls) {
-          const tc: ToolCall = {
-            id: toolCall.id,
-            name: toolCall.function.name,
-            arguments: JSON.parse(toolCall.function.arguments)
-          }
-          toolCalls.push(tc)
+        const calls = assistantMessage.tool_calls.map(tc => ({
+          id: tc.id,
+          name: tc.function.name,
+          arguments: JSON.parse(tc.function.arguments)
+        }))
+        toolCalls.push(...calls)
 
-          const result = await toolRegistry.execute(
-            tc.name,
-            tc.arguments,
-            this.context
-          )
-
+        // 执行工具
+        for (const call of calls) {
+          const result = await toolRegistry.execute(call.name, call.arguments, this.context)
           toolResults.push({
-            toolCallId: tc.id,
+            toolCallId: call.id,
             success: result.success,
             result: result.data,
             error: result.error
           })
+        }
 
-          // 将工具结果添加到对话
-          this.context.memory.shortTerm.add({
-            id: `msg_${Date.now()}_tool`,
+        // 添加工具调用到消息历史
+        messages.push({
+          role: 'assistant' as const,
+          content: assistantMessage.content || ''
+        })
+        
+        // 添加工具结果
+        for (const tr of toolResults) {
+          messages.push({
             role: 'tool',
-            content: result.success 
-              ? JSON.stringify(result.data) 
-              : `Error: ${result.error}`,
-            timestamp: Date.now(),
-            toolCalls: [tc],
-            toolResults: [toolResults[toolResults.length - 1]]
+            content: JSON.stringify(tr.result || { error: tr.error })
           })
         }
 
-        // 5. 再次调用 LLM 生成最终回复
-        const finalMessages = this.buildMessages()
+        // 再次调用 LLM 获取最终回复
         const finalResponse = await chatCompletion(
-          finalMessages,
-          undefined, // 第二次不传工具
+          messages,
+          undefined,
           {
             model: this.context.config.model,
             temperature: this.context.config.temperature
           }
         )
 
-        const finalContent = finalResponse.choices[0].message.content
-
-        // 添加助手回复到记忆
-        const assistantMsg: Message = {
+        const finalMessage = finalResponse.choices[0].message
+        
+        const responseMsg: Message = {
           id: `msg_${Date.now()}_assistant`,
           role: 'assistant',
-          content: finalContent || '',
-          timestamp: Date.now()
+          content: finalMessage.content || '',
+          timestamp: Date.now(),
+          toolCalls,
+          toolResults
         }
-        this.context.memory.shortTerm.add(assistantMsg)
+        
+        this.context.memory.shortTerm.add(responseMsg)
 
         return {
-          message: assistantMsg,
+          message: responseMsg,
           toolCalls,
           toolResults,
           iterations: 1,
@@ -273,86 +231,203 @@ export class RunningCoachAgent {
         }
       }
 
-      // 无工具调用，直接返回文本回复
-      const content = assistantMessage.content || ''
-
-      const assistantMsg: Message = {
+      // 无工具调用，直接返回
+      const responseMsg: Message = {
         id: `msg_${Date.now()}_assistant`,
         role: 'assistant',
-        content,
+        content: assistantMessage.content || '',
         timestamp: Date.now()
       }
-      this.context.memory.shortTerm.add(assistantMsg)
+      
+      this.context.memory.shortTerm.add(responseMsg)
 
       return {
-        message: assistantMsg,
+        message: responseMsg,
         toolCalls: [],
         toolResults: [],
         iterations: 0,
         success: true
       }
-
     } catch (error: any) {
+      console.error('Agent process error:', error)
       return {
         message: {
           id: `msg_${Date.now()}_error`,
           role: 'assistant',
-          content: `抱歉，我遇到了一些问题：${error.message}。请稍后再试。`,
+          content: `处理消息时出错：${error.message}`,
           timestamp: Date.now()
         },
         toolCalls,
         toolResults,
-        iterations,
+        iterations: 0,
         success: false,
         error: error.message
       }
     }
   }
 
-  // 构建消息列表
-  private buildMessages(): Array<{ role: string; content: string }> {
-    const messages: Array<{ role: string; content: string }> = []
+  // 处理用户消息（流式模式）
+  async *processStream(userMessage: string): AsyncGenerator<{
+    type: 'content' | 'tool_call' | 'tool_result' | 'done' | 'error';
+    data: any;
+  }> {
+    const toolCalls: ToolCall[] = []
+    const toolResults: ToolResult[] = []
 
-    // 系统消息
-    let systemContent = this.context.config.systemPrompt || DEFAULT_SYSTEM_PROMPT
-    
-    // 添加上下文摘要
-    const contextSummary = this.context.memory.getContextSummary()
-    if (contextSummary) {
-      systemContent += `\n\n## 当前上下文\n${contextSummary}`
+    // 1. 添加用户消息到记忆
+    const userMsg: Message = {
+      id: `msg_${Date.now()}_user`,
+      role: 'user',
+      content: userMessage,
+      timestamp: Date.now()
     }
-    
-    messages.push({ role: 'system', content: systemContent })
+    this.context.memory.shortTerm.add(userMsg)
 
-    // 对话历史
-    const conversation = this.context.memory.shortTerm.getConversation()
-    messages.push(...conversation.map(m => ({
-      role: m.role,
-      content: m.content
-    })))
+    try {
+      // 2. 构建 API 消息
+      const messages = this.buildMessages()
 
-    return messages
+      // 3. 流式调用 LLM
+      let fullContent = ''
+
+      for await (const chunk of chatCompletionStream(
+        messages,
+        toolRegistry.getFunctionDefinitions(),
+        {
+          model: this.context.config.model,
+          temperature: this.context.config.temperature
+        }
+      )) {
+        fullContent += chunk
+        yield {
+          type: 'content',
+          data: chunk
+        }
+      }
+
+      // 检查是否有工具调用（需要解析完整的 assistant 消息）
+      // 由于流式返回无法直接获取 tool_calls，需要重新调用
+      const response = await chatCompletion(
+        messages,
+        toolRegistry.getFunctionDefinitions(),
+        {
+          model: this.context.config.model,
+          temperature: this.context.config.temperature
+        }
+      )
+
+      const choice = response.choices[0]
+      if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+        const calls = choice.message.tool_calls.map((tc: any) => ({
+          id: tc.id,
+          name: tc.function.name,
+          arguments: JSON.parse(tc.function.arguments)
+        }))
+        toolCalls.push(...calls)
+
+        yield {
+          type: 'tool_call',
+          data: calls
+        }
+
+        // 执行工具
+        for (const call of calls) {
+          const result = await toolRegistry.execute(call.name, call.arguments, this.context)
+          const toolResult: ToolResult = {
+            toolCallId: call.id,
+            success: result.success,
+            result: result.data,
+            error: result.error
+          }
+          toolResults.push(toolResult)
+
+          yield {
+            type: 'tool_result',
+            data: {
+              toolName: call.name,
+              result: result.data
+            }
+          }
+        }
+
+        // 添加工具调用到消息历史
+        messages.push({
+          role: 'assistant' as const,
+          content: fullContent || ''
+        })
+        
+        // 添加工具结果
+        for (const tr of toolResults) {
+          messages.push({
+            role: 'tool',
+            content: JSON.stringify(tr.result || { error: tr.error })
+          })
+        }
+
+        // 再次调用 LLM 获取最终回复（流式）
+        let finalContent = ''
+        for await (const chunk of chatCompletionStream(
+          messages,
+          [],
+          {
+            model: this.context.config.model,
+            temperature: this.context.config.temperature
+          }
+        )) {
+          finalContent += chunk
+          yield {
+            type: 'content',
+            data: chunk
+          }
+        }
+
+        const responseMsg: Message = {
+          id: `msg_${Date.now()}_assistant`,
+          role: 'assistant',
+          content: finalContent,
+          timestamp: Date.now(),
+          toolCalls,
+          toolResults
+        }
+        
+        this.context.memory.shortTerm.add(responseMsg)
+      } else {
+        // 无工具调用
+        const responseMsg: Message = {
+          id: `msg_${Date.now()}_assistant`,
+          role: 'assistant',
+          content: fullContent,
+          timestamp: Date.now()
+        }
+        
+        this.context.memory.shortTerm.add(responseMsg)
+      }
+
+      yield {
+        type: 'done',
+        data: {
+          toolCalls,
+          toolResults,
+          success: true
+        }
+      }
+    } catch (error: any) {
+      console.error('Agent stream process error:', error)
+      yield {
+        type: 'error',
+        data: error.message
+      }
+    }
   }
 
-  // 获取对话历史
-  getHistory(): Message[] {
-    return this.context.memory.shortTerm.getConversation()
-  }
-
-  // 清除对话
+  // 清空对话历史
   clearHistory(): void {
     this.context.memory.shortTerm.clear()
-  }
-
-  // 设置用户资料
-  setUserProfile(profile: any): void {
-    this.context.memory.longTerm.updateProfile(profile)
-    this.context.memory.save()
   }
 }
 
 // ----------------------
-// 导出默认实例
+// 单例导出
 // ----------------------
 let agentInstance: RunningCoachAgent | null = null
 

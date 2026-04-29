@@ -1,12 +1,85 @@
 // ============================================
-// 训练计划工具
+// 训练计划工具 - 使用 localStorage 持久化
 // ============================================
 
-import type { Tool, AgentContext, ToolExecutionResult } from '../types'
+import type { Tool, ToolExecutionResult } from '../types'
 import type { TrainingPlan } from '@/models/types'
+import {
+  getActivePlan,
+  addTrainingPlan as storageAddPlan,
+  updateTrainingPlan as storageUpdatePlan
+} from '@/store/storage'
 
-// 模拟训练计划存储
-const plansStore: TrainingPlan[] = []
+// 生成每周训练计划
+function generateWeeklyPlans(totalWeeks: number, baseMileage: number, daysPerWeek: number) {
+  const plans = []
+  const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+  
+  for (let week = 1; week <= totalWeeks; week++) {
+    // 遵循 10% 规则，逐渐增加跑量
+    const progressFactor = Math.min(week / totalWeeks, 1)
+    // 前半程增加，后半程保持或减量（赛前减量）
+    const mileage = week <= totalWeeks * 0.7
+      ? Math.round(baseMileage * (1 + progressFactor * 0.6) * 10) / 10
+      : Math.round(baseMileage * (1.3 - (week - totalWeeks * 0.7) / (totalWeeks * 0.3) * 0.3) * 10) / 10
+    
+    // 训练类型分配
+    const workouts = []
+    const usedDays = new Set<number>()
+    
+    // 长跑日
+    const longRunDay = Math.floor(Math.random() * daysPerWeek)
+    usedDays.add(longRunDay)
+    
+    // 间歇训练日
+    let intervalDay = (longRunDay + 2) % daysPerWeek
+    while (usedDays.has(intervalDay) && usedDays.size < daysPerWeek) {
+      intervalDay = (intervalDay + 1) % daysPerWeek
+    }
+    usedDays.add(intervalDay)
+    
+    // 节奏跑日
+    let tempoDay = (longRunDay + 4) % daysPerWeek
+    while (usedDays.has(tempoDay) && usedDays.size < daysPerWeek) {
+      tempoDay = (tempoDay + 1) % daysPerWeek
+    }
+    usedDays.add(tempoDay)
+    
+    for (let day = 0; day < daysPerWeek; day++) {
+      let type: string
+      let description: string
+      
+      if (day === longRunDay) {
+        type = 'long_run'
+        description = `长跑 ${Math.round(mileage * 0.35)}km，控制在目标配速，注意补给`
+      } else if (day === intervalDay) {
+        type = 'interval'
+        description = '间歇训练：6-8组400m全力跑，组间休息200m慢跑'
+      } else if (day === tempoDay) {
+        type = 'tempo'
+        description = '节奏跑：10分钟热身 + 25分钟目标配速 + 10分钟放松'
+      } else {
+        type = 'easy'
+        description = `轻松跑 ${Math.round(mileage * 0.15)}km，保持可以对话的强度`
+      }
+      
+      workouts.push({
+        day: dayNames[day % 7],
+        type,
+        description,
+        completed: false
+      })
+    }
+    
+    plans.push({
+      week,
+      totalMileage: mileage,
+      workouts
+    })
+  }
+  
+  return plans
+}
 
 export const generatePlanTool: Tool = {
   name: 'generate_training_plan',
@@ -41,85 +114,64 @@ export const generatePlanTool: Tool = {
     },
     required: ['target', 'currentWeeklyMileage']
   },
-  execute: async (args, context): Promise<ToolExecutionResult> => {
-    const { target, deadline, currentWeeklyMileage, currentLongestRun, avgPace, availableDaysPerWeek = 4 } = args
+  execute: async (args): Promise<ToolExecutionResult> => {
+    const { 
+      target, 
+      deadline, 
+      currentWeeklyMileage, 
+      availableDaysPerWeek = 4 
+    } = args
     
     // 计算训练周期
-    const weeks = deadline 
-      ? Math.ceil((new Date(deadline).getTime() - Date.now()) / (7 * 24 * 60 * 60 * 1000))
-      : 12
+    let weeks: number
+    if (deadline) {
+      const deadlineDate = new Date(deadline)
+      weeks = Math.max(1, Math.ceil((deadlineDate.getTime() - Date.now()) / (7 * 24 * 60 * 60 * 1000)))
+    } else {
+      // 根据目标设定默认周期
+      if (target.includes('马拉松') || target.includes('全马')) {
+        weeks = 20
+      } else if (target.includes('半马')) {
+        weeks = 12
+      } else {
+        weeks = 8
+      }
+    }
     
-    // 简单的训练计划生成
+    // 生成训练计划
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + weeks * 7 * 24 * 60 * 60 * 1000)
+    
     const plan: TrainingPlan = {
-      id: Date.now().toString(),
+      id: `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       target,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: deadline || new Date(Date.now() + weeks * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: deadline || endDate.toISOString().split('T')[0],
       totalWeeks: weeks,
-      weeklyPlans: generateWeeklyPlans(weeks, currentWeeklyMileage, availableDaysPerWeek, target),
+      weeklyPlans: generateWeeklyPlans(weeks, currentWeeklyMileage, availableDaysPerWeek),
       currentWeek: 1,
       status: 'active',
       createdAt: new Date().toISOString()
     }
     
-    plansStore.unshift(plan)
+    storageAddPlan(plan)
+    
+    // 生成计划摘要
+    const firstWeek = plan.weeklyPlans[0]
+    const lastWeek = plan.weeklyPlans[plan.weeklyPlans.length - 1]
     
     return {
       success: true,
       data: {
         plan,
-        message: `已生成${weeks}周训练计划，目标是${target}`
+        message: `已生成${weeks}周训练计划！
+📌 目标：${target}
+📅 时间：${plan.startDate} 至 ${plan.endDate}
+📊 跑量：从每周${firstWeek.totalMileage}km逐步增加到${lastWeek.totalMileage}km
+🏃 训练安排：每周${availableDaysPerWeek}天，包含长跑、间歇、节奏跑和轻松跑`
       }
     }
   }
-}
-
-function generateWeeklyPlans(totalWeeks: number, baseMileage: number, daysPerWeek: number, target: string) {
-  const plans = []
-  
-  for (let week = 1; week <= totalWeeks; week++) {
-    // 逐渐增加跑量（遵循10%规则）
-    const progressFactor = Math.min(week / totalWeeks, 1)
-    const mileage = Math.round(baseMileage * (1 + progressFactor * 0.5) * 10) / 10
-    
-    // 训练类型分配
-    const longRunDay = daysPerWeek === 1 ? 0 : Math.floor(Math.random() * (daysPerWeek - 1))
-    
-    const workouts = []
-    for (let day = 0; day < daysPerWeek; day++) {
-      let type: string
-      let description: string
-      
-      if (day === longRunDay) {
-        type = 'long_run'
-        description = `长跑 ${Math.round(mileage * 0.4)}km，控制在目标配速`
-      } else if (day === (longRunDay + 1) % daysPerWeek) {
-        type = 'interval'
-        description = '间歇训练：8x400m 全力，休息200m'
-      } else if (day === (longRunDay + 2) % daysPerWeek) {
-        type = 'tempo'
-        description = '节奏跑：20分钟热身 + 30分钟目标配速 + 10分钟放松'
-      } else {
-        type = 'easy'
-        description = `轻松跑 ${Math.round(mileage * 0.2)}km，保持可以对话的强度`
-      }
-      
-      workouts.push({
-        day: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'][day],
-        type,
-        description,
-        completed: false
-      })
-    }
-    
-    plans.push({
-      week,
-      totalMileage: mileage,
-      workouts
-    })
-  }
-  
-  return plans
 }
 
 export const getPlanTool: Tool = {
@@ -134,34 +186,77 @@ export const getPlanTool: Tool = {
       }
     }
   },
-  execute: async (args, context): Promise<ToolExecutionResult> => {
-    const activePlan = plansStore.find(p => p.status === 'active')
+  execute: async (args): Promise<ToolExecutionResult> => {
+    const activePlan = getActivePlan()
     
     if (!activePlan) {
       return {
         success: true,
         data: {
-          message: '暂无激活的训练计划'
+          message: '暂无激活的训练计划。你可以告诉我你的跑步目标和计划完成时间，我会帮你制定训练计划。'
         }
       }
     }
     
+    // 计算当前是第几周
+    const startDate = new Date(activePlan.startDate)
+    const now = new Date()
+    const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000))
+    const currentWeek = Math.min(Math.floor(daysSinceStart / 7) + 1, activePlan.totalWeeks)
+    
     if (args.week) {
       const weekPlan = activePlan.weeklyPlans.find(w => w.week === args.week)
+      if (!weekPlan) {
+        return {
+          success: true,
+          data: {
+            message: `没有找到第${args.week}周的训练计划`
+          }
+        }
+      }
+      
+      const workoutList = weekPlan.workouts.map(w => {
+        const status = w.completed ? '✅' : '⬜'
+        return `${status} ${w.day}：${w.description}`
+      }).join('\n')
+      
       return {
         success: true,
         data: {
-          plan: activePlan,
-          weekPlan
+          week: args.week,
+          totalMileage: weekPlan.totalMileage,
+          workouts: weekPlan.workouts,
+          message: `📅 第${args.week}周训练计划（总里程${weekPlan.totalMileage}km）：\n${workoutList}`
         }
       }
+    }
+    
+    // 返回整个计划摘要
+    const completedWeeks = activePlan.weeklyPlans.filter(w => w.week < currentWeek && w.workouts.every(workout => workout.completed)).length
+    const currentWeekPlan = activePlan.weeklyPlans.find(w => w.week === currentWeek)
+    
+    let message = `📋 当前训练计划\n`
+    message += `━━━━━━━━━━━━━━━━\n`
+    message += `🎯 目标：${activePlan.target}\n`
+    message += `📅 周期：第${currentWeek}/${activePlan.totalWeeks}周\n`
+    message += `📊 进度：已完成${completedWeeks}周\n`
+    
+    if (currentWeekPlan) {
+      message += `\n📌 本周训练（总里程${currentWeekPlan.totalMileage}km）：\n`
+      currentWeekPlan.workouts.forEach(w => {
+        const status = w.completed ? '✅' : '⬜'
+        message += `${status} ${w.day}：${w.description}\n`
+      })
     }
     
     return {
       success: true,
       data: {
         plan: activePlan,
-        message: `当前训练计划：${activePlan.target}，第${activePlan.currentWeek}/${activePlan.totalWeeks}周`
+        currentWeek,
+        currentWeekPlan,
+        completedWeeks,
+        message: message.trim()
       }
     }
   }
@@ -169,17 +264,17 @@ export const getPlanTool: Tool = {
 
 export const completeWorkoutTool: Tool = {
   name: 'complete_workout',
-  description: '标记某次训练为已完成，并记录实际完成的感受和数据。当用户完成训练后使用。',
+  description: '标记某次训练为完成。当用户完成训练后使用，可以更新本周训练计划的完成状态。',
   parameters: {
     type: 'object',
     properties: {
       week: {
         type: 'number',
-        description: '第几周'
+        description: '训练所属周次'
       },
       day: {
         type: 'string',
-        description: '训练日，如"周三"'
+        description: '训练日，如"周一"、"周二"'
       },
       actualDistance: {
         type: 'number',
@@ -191,47 +286,65 @@ export const completeWorkoutTool: Tool = {
       },
       feeling: {
         type: 'string',
-        description: '完成感受'
+        description: '训练感受'
       }
     },
     required: ['week', 'day']
   },
-  execute: async (args, context): Promise<ToolExecutionResult> => {
-    const activePlan = plansStore.find(p => p.status === 'active')
+  execute: async (args): Promise<ToolExecutionResult> => {
+    const { week, day, actualDistance, actualDuration, feeling } = args
+    const activePlan = getActivePlan()
     
     if (!activePlan) {
       return {
-        success: false,
-        error: '没有激活的训练计划'
+        success: true,
+        data: {
+          message: '暂无激活的训练计划'
+        }
       }
     }
     
-    const weekPlan = activePlan.weeklyPlans.find(w => w.week === args.week)
+    const weekPlan = activePlan.weeklyPlans.find(w => w.week === week)
     if (!weekPlan) {
       return {
-        success: false,
-        error: `第${args.week}周的计划不存在`
+        success: true,
+        data: {
+          message: `没有找到第${week}周的训练计划`
+        }
       }
     }
     
-    const workout = weekPlan.workouts.find(w => w.day === args.day)
+    const workout = weekPlan.workouts.find(w => w.day === day)
     if (!workout) {
       return {
-        success: false,
-        error: `${args.day}没有安排的训练`
+        success: true,
+        data: {
+          message: `第${week}周${day}没有安排训练`
+        }
       }
     }
     
+    // 更新训练状态
     workout.completed = true
-    if (args.actualDistance) workout.actualDistance = args.actualDistance
-    if (args.actualDuration) workout.actualDuration = args.actualDuration
-    if (args.feeling) workout.feeling = args.feeling
+    if (actualDistance) workout.actualDistance = actualDistance
+    if (actualDuration) workout.actualDuration = actualDuration
+    if (feeling) workout.feeling = feeling
+    
+    storageUpdatePlan(activePlan.id, { weeklyPlans: activePlan.weeklyPlans })
+    
+    // 计算本周完成进度
+    const completedCount = weekPlan.workouts.filter(w => w.completed).length
+    const totalCount = weekPlan.workouts.length
+    const progress = Math.round((completedCount / totalCount) * 100)
     
     return {
       success: true,
       data: {
-        message: `${args.day}的训练已完成`,
-        workout
+        week,
+        day,
+        completed: true,
+        progress,
+        message: `✅ ${day}训练已记录完成！\n本周进度：${completedCount}/${totalCount} ({progress}%)\n${feeling ? `感受：${feeling}` : ''}`
       }
     }
   }

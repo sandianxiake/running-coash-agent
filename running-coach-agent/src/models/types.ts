@@ -11,6 +11,7 @@ export interface UserProfile {
   height: number
   weight: number
   abilityTags?: string[]
+  goals?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -74,4 +75,24 @@ export interface RacePrediction {
     interval: string
   }
   recommendations: string[]
+}
+
+// ----------------------
+// 额外类型（供 Agent 使用）
+// ----------------------
+
+export interface Goal {
+  id: string
+  type: 'race' | 'weight' | 'mileage' | 'custom'
+  target: string
+  deadline?: string
+  progress: number
+  createdAt: string
+}
+
+export interface UserPreferences {
+  preferredPace: string
+  availableDays: string[]
+  injuryHistory: string[]
+  preferredTrainingStyle: string
 }

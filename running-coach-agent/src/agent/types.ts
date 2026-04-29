@@ -2,7 +2,7 @@
 // Agent Core Types - 智能体核心类型定义
 // ============================================
 
-import type { UserProfile, RunningRecord, TrainingPlan, ChatMessage } from '@/models/types'
+import type { UserProfile, RunningRecord, TrainingPlan } from '@/models/types'
 
 // ----------------------
 // 消息与对话
@@ -70,6 +70,10 @@ export interface Memory {
 export interface ShortTermMemory {
   messages: Message[]
   maxSize: number
+  add(message: Message): void
+  getRecent(count: number): Message[]
+  getConversation(): Message[]
+  clear(): void
 }
 
 export interface LongTermMemory {

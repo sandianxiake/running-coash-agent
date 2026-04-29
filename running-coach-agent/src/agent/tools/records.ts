@@ -1,12 +1,13 @@
 // ============================================
-// 跑步记录工具
+// 跑步记录工具 - 使用 localStorage 持久化
 // ============================================
 
-import type { Tool, AgentContext, ToolExecutionResult } from '../types'
+import type { Tool, ToolExecutionResult } from '../types'
 import type { RunningRecord } from '@/models/types'
-
-// 模拟数据存储
-const recordsStore: RunningRecord[] = []
+import { 
+  getRunningRecords, 
+  addRunningRecord as storageAddRecord
+} from '@/store/storage'
 
 export const recordsTool: Tool = {
   name: 'get_running_records',
@@ -20,15 +21,16 @@ export const recordsTool: Tool = {
       }
     }
   },
-  execute: async (args, context): Promise<ToolExecutionResult> => {
+  execute: async (args): Promise<ToolExecutionResult> => {
     const { limit = 10 } = args
-    const records = recordsStore.slice(0, limit)
+    const allRecords = getRunningRecords()
+    const records = allRecords.slice(0, limit)
     
     return {
       success: true,
       data: {
         records,
-        total: recordsStore.length
+        total: allRecords.length
       }
     }
   }
@@ -71,9 +73,9 @@ export const addRecordTool: Tool = {
     },
     required: ['distance', 'duration', 'pace']
   },
-  execute: async (args, context): Promise<ToolExecutionResult> => {
+  execute: async (args): Promise<ToolExecutionResult> => {
     const newRecord: RunningRecord = {
-      id: Date.now().toString(),
+      id: `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       distance: args.distance,
       duration: args.duration,
       pace: args.pace,
@@ -84,13 +86,13 @@ export const addRecordTool: Tool = {
       createdAt: new Date().toISOString()
     }
     
-    recordsStore.unshift(newRecord)
+    storageAddRecord(newRecord)
     
     return {
       success: true,
       data: {
         record: newRecord,
-        message: '跑步记录已添加'
+        message: `跑步记录已添加：${args.distance}公里，用时${args.duration}分钟`
       }
     }
   }
@@ -109,18 +111,20 @@ export const analyzeRecordsTool: Tool = {
       }
     }
   },
-  execute: async (args, context): Promise<ToolExecutionResult> => {
+  execute: async (args): Promise<ToolExecutionResult> => {
     const period = args.period || 'all'
     const now = new Date()
     
-    let filteredRecords = recordsStore
+    let filteredRecords = getRunningRecords()
     
     if (period === 'week') {
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      filteredRecords = recordsStore.filter(r => new Date(r.createdAt) >= weekAgo)
+      const weekStart = new Date(now)
+      weekStart.setDate(now.getDate() - now.getDay())
+      weekStart.setHours(0, 0, 0, 0)
+      filteredRecords = filteredRecords.filter(r => new Date(r.createdAt) >= weekStart)
     } else if (period === 'month') {
-      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-      filteredRecords = recordsStore.filter(r => new Date(r.createdAt) >= monthAgo)
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      filteredRecords = filteredRecords.filter(r => new Date(r.createdAt) >= monthStart)
     }
     
     if (filteredRecords.length === 0) {
@@ -138,12 +142,47 @@ export const analyzeRecordsTool: Tool = {
     const totalDistance = filteredRecords.reduce((sum, r) => sum + r.distance, 0)
     const totalDuration = filteredRecords.reduce((sum, r) => sum + r.duration, 0)
     const avgPace = totalDuration / totalDistance
-    const avgHeartRate = filteredRecords.reduce((sum, r) => sum + (r.avgHeartRate || 0), 0) / filteredRecords.length
+    const recordsWithHeartRate = filteredRecords.filter(r => r.avgHeartRate)
+    const avgHeartRate = recordsWithHeartRate.length > 0
+      ? recordsWithHeartRate.reduce((sum, r) => sum + (r.avgHeartRate || 0), 0) / recordsWithHeartRate.length
+      : 0
     
-    // 配速变化（简化版）
-    const paceTrend = filteredRecords.length >= 2 
-      ? (filteredRecords[0].pace < filteredRecords[filteredRecords.length - 1].pace ? '提升' : '稳定')
-      : '数据不足'
+    // 计算配速趋势
+    const paceValues = filteredRecords.map(r => {
+      const [min, sec] = r.pace.split(':').map(Number)
+      return min + sec / 60
+    })
+    
+    let paceTrend: '提升' | '下降' | '稳定' | '数据不足' = '数据不足'
+    if (paceValues.length >= 2) {
+      const recentAvg = paceValues.slice(0, Math.ceil(paceValues.length / 2)).reduce((a, b) => a + b, 0) / Math.ceil(paceValues.length / 2)
+      const olderAvg = paceValues.slice(Math.ceil(paceValues.length / 2)).reduce((a, b) => a + b, 0) / Math.floor(paceValues.length / 2)
+      if (recentAvg < olderAvg - 0.1) paceTrend = '提升'
+      else if (recentAvg > olderAvg + 0.1) paceTrend = '下降'
+      else paceTrend = '稳定'
+    }
+    
+    // 周跑量趋势（近4周）
+    const weeklyStats: { week: string; distance: number; count: number }[] = []
+    for (let i = 0; i < 4; i++) {
+      const weekEnd = new Date(now)
+      weekEnd.setDate(now.getDate() - i * 7)
+      const weekStart = new Date(weekEnd)
+      weekStart.setDate(weekEnd.getDate() - 7)
+      
+      const weekRecords = filteredRecords.filter(r => {
+        const d = new Date(r.createdAt)
+        return d >= weekStart && d < weekEnd
+      })
+      
+      if (weekRecords.length > 0) {
+        weeklyStats.unshift({
+          week: `第${4 - i}周`,
+          distance: Math.round(weekRecords.reduce((sum, r) => sum + r.distance, 0) * 100) / 100,
+          count: weekRecords.length
+        })
+      }
+    }
     
     return {
       success: true,
@@ -153,8 +192,9 @@ export const analyzeRecordsTool: Tool = {
         totalDistance: Math.round(totalDistance * 100) / 100,
         totalDuration: Math.round(totalDuration * 10) / 10,
         avgPace: `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}`,
-        avgHeartRate: Math.round(avgHeartRate),
+        avgHeartRate: Math.round(avgHeartRate) || null,
         paceTrend,
+        weeklyStats,
         message: `在${period === 'week' ? '本周' : period === 'month' ? '本月' : '所有记录'}内，共跑步${filteredRecords.length}次，总距离${totalDistance.toFixed(1)}公里`
       }
     }

@@ -6,13 +6,15 @@ import type {
   Memory, 
   ShortTermMemory, 
   LongTermMemory, 
-  Message,
+  Message
+} from './types'
+import type {
   UserProfile,
   RunningRecord,
   TrainingPlan,
   Goal,
   UserPreferences
-} from './types'
+} from '@/models/types'
 
 // ----------------------
 // 短期记忆（对话上下文）

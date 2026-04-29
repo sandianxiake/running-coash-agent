@@ -2,7 +2,7 @@
 // Tool Registry - 工具注册与执行系统
 // ============================================
 
-import type { Tool, ToolExecutionResult, AgentContext } from './types'
+import type { Tool, ToolExecutionResult, AgentContext } from '../types'
 
 // 工具注册表
 class ToolRegistry {
