@@ -1,28 +1,30 @@
-# Environment variables
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 环境变量
 .env
 .env.local
 .env.*.local
-.env.production
 
-# Logs
-logs
-*.log
+# 日志
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
 pnpm-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# 系统文件
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# 调试
+*.map
