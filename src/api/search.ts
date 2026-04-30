@@ -493,7 +493,7 @@ const RUNNING_KNOWLEDGE = [
   {
     id: 24,
     topic: '跑步APP与数据',
-    keywords: ['APP', '数据', '记录', '分析', 'Garmin', 'Keep', '悦跑圈'],
+    keywords: ['APP', '数据', '记录', '分析', 'Garmin', 'Keep', '悦跑圈', '高驰', 'COROS', '华为', 'Fit'],
     content: `跑步数据记录：
 【常用APP】
 • Keep：功能全面，适合新手
@@ -502,9 +502,17 @@ const RUNNING_KNOWLEDGE = [
 • Nike Run Club：界面简洁
 
 【跑步手表】
-• Garmin：专业跑步数据
-• Apple Watch：日常使用方便
-• 华为/小米：性价比高
+• Garmin：专业跑步数据，生态完善
+• 高驰（COROS）：国产专业手表，续航强劲，性价比高
+  - COROS Apex/Vertix：专业铁三手表
+  - COROS Pace：高性价比跑步手表
+  - 支持训练负荷、恢复时间、跑步动态分析
+• 华为（Huawei）：
+  - Huawei Watch GT Runner：专业跑步手表
+  - Huawei Watch Fit 系列：轻便入门，适合日常跑步
+  - 支持 GPS、心率、跑步指数分析
+• Apple Watch：日常使用方便，生态整合好
+• 小米/荣耀：性价比高，基础功能齐全
 
 【关注的数据】
 • 距离、配速、心率
