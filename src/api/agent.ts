@@ -2,7 +2,7 @@
 // Agent API - DeepSeek API 调用
 // ============================================
 
-const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || 'your-api-key'
+const DEEPSEEK_API_KEY = 'sk-a551054c8b714b30ba51885a0a74ac06'
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com'
 
 export interface ChatOptions {

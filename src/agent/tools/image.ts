@@ -6,7 +6,7 @@ import type { Tool, ToolExecutionResult } from '../types'
 import { addRunningRecord } from '@/store/storage'
 
 // DeepSeek API 配置
-const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || ''
+const DEEPSEEK_API_KEY = 'sk-a551054c8b714b30ba51885a0a74ac06'
 
 export const analyzeImageTool: Tool = {
   name: 'analyze_image',
