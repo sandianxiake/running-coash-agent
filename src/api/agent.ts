@@ -178,3 +178,73 @@ export async function* chatCompletionStream(
     }
   }
 }
+
+// ----------------------
+// 生成快捷问题
+// ----------------------
+const QUICK_QUESTIONS_PROMPT = `你是一个跑步教练助手。请根据用户可能的跑步需求，生成4个不同的快捷问题，用于快速提问。
+
+要求：
+1. 问题要简短（15字以内）
+2. 问题要多样化，覆盖训练计划、数据分析、跑步知识、健康建议等不同方面
+3. 不要重复相同类型的问题
+4. 只输出问题，用换行分隔，不要编号，不要其他说明
+
+示例：
+如何制定训练计划
+我最近配速下降了什么原因
+跑步时呼吸急促怎么办
+半马训练需要多久`
+
+export async function generateQuickQuestions(): Promise<string[]> {
+  try {
+    const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'user', content: QUICK_QUESTIONS_PROMPT }
+        ],
+        temperature: 0.9,
+        max_tokens: 200
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content || ''
+    
+    // 解析问题（按换行分割，去除空白字符）
+    const questions = content
+      .split('\n')
+      .map(q => q.trim())
+      .filter(q => q.length > 0 && q.length <= 30)
+      .slice(0, 4)
+
+    // 如果解析失败，返回默认值
+    if (questions.length < 4) {
+      return getDefaultQuickQuestions()
+    }
+
+    return questions
+  } catch (error) {
+    console.error('生成快捷问题失败:', error)
+    return getDefaultQuickQuestions()
+  }
+}
+
+function getDefaultQuickQuestions(): string[] {
+  return [
+    '制定一个半马训练计划',
+    '分析我的跑步数据',
+    '跑步时膝盖疼怎么办',
+    '如何提高配速'
+  ]
+}

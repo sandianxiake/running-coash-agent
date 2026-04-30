@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
 import { getAgent, type Message } from './agent'
+import { generateQuickQuestions } from './api/agent'
 import * as echarts from 'echarts'
 import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory } from './store/storage'
 
@@ -32,6 +33,9 @@ const stats = ref({
 // 当前流式消息
 const streamingMessageId = ref<string | null>(null)
 
+// 快捷问题（由 AI 动态生成）
+const quickQuestions = ref<string[]>([])
+
 // 初始化
 onMounted(async () => {
   // 恢复聊天记录
@@ -50,6 +54,20 @@ onMounted(async () => {
 
   // 加载用户数据
   loadUserData()
+  
+  // AI 生成快捷问题
+  try {
+    const questions = await generateQuickQuestions()
+    quickQuestions.value = questions
+  } catch (e) {
+    // 使用默认问题
+    quickQuestions.value = [
+      '制定一个半马训练计划',
+      '分析我的跑步数据',
+      '跑步时膝盖疼怎么办',
+      '如何提高配速'
+    ]
+  }
   
   // 初始化图表
   await nextTick()
@@ -420,14 +438,6 @@ function clearChat() {
     timestamp: Date.now()
   })
 }
-
-// 快捷问题
-const quickQuestions = [
-  '制定一个半马训练计划',
-  '分析我的跑步数据',
-  '跑步时膝盖疼怎么办',
-  '如何提高配速'
-]
 
 function askQuestion(question: string) {
   inputText.value = question
