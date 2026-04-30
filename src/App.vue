@@ -2,7 +2,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { getAgent, type Message } from './agent'
 import * as echarts from 'echarts'
-import { getRunningRecords, getActivePlan } from './store/storage'
+import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory } from './store/storage'
 
 const messages = ref<Message[]>([])
 const inputText = ref('')
@@ -34,13 +34,19 @@ const streamingMessageId = ref<string | null>(null)
 
 // 初始化
 onMounted(async () => {
-  // 加载欢迎消息
-  messages.value.push({
-    id: 'welcome',
-    role: 'assistant',
-    content: '你好！我是你的 AI 跑步教练。有什么关于跑步的问题，随时问我！\n\n我可以帮你：\n📋 制定训练计划\n📊 分析跑步数据\n📚 解答跑步知识\n🎯 设定跑步目标',
-    timestamp: Date.now()
-  })
+  // 恢复聊天记录
+  const savedMessages = getSessionMemory()
+  if (savedMessages.length > 0) {
+    messages.value = savedMessages
+  } else {
+    // 加载欢迎消息
+    messages.value.push({
+      id: 'welcome',
+      role: 'assistant',
+      content: '你好！我是你的 AI 跑步教练。有什么关于跑步的问题，随时问我！\n\n我可以帮你：\n📋 制定训练计划\n📊 分析跑步数据\n📚 解答跑步知识\n🎯 设定跑步目标',
+      timestamp: Date.now()
+    })
+  }
 
   // 加载用户数据
   loadUserData()
@@ -397,6 +403,8 @@ async function sendMessage() {
     streamingMessageId.value = null
   } finally {
     isLoading.value = false
+    // 保存聊天记录
+    setSessionMemory(messages.value)
   }
 }
 
@@ -404,6 +412,7 @@ async function sendMessage() {
 function clearChat() {
   messages.value = messages.value.filter(m => m.role === 'assistant')
   agent.clearHistory()
+  clearSessionMemory()
   messages.value.unshift({
     id: 'welcome',
     role: 'assistant',
