@@ -1,6 +1,9 @@
 #!/bin/bash
 set -Eeuo pipefail
 
+# 确保脚本有执行权限
+chmod +x "$(dirname "$0")"/*.sh 2>/dev/null || true
+
 echo "[DEBUG] Current directory: $(pwd)"
 echo "[DEBUG] Script location: $0"
 echo "[DEBUG] Script directory: $(dirname "$0")"
