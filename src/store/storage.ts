@@ -188,8 +188,8 @@ export function getSessionMemory(): any[] {
 }
 
 export function setSessionMemory(messages: any[]): void {
-  // 限制存储大小，只保留最近 50 条消息
-  const trimmed = messages.slice(-50)
+  // 限制存储大小，只保留最近 100 条消息
+  const trimmed = messages.slice(-100)
   setItem(STORAGE_KEYS.SESSION_MEMORY, trimmed)
 }
 
