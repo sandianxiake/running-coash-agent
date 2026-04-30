@@ -151,4 +151,12 @@ export interface AgentResponse {
   iterations: number
   success: boolean
   error?: string
+  // 自我反思结果
+  reflection?: {
+    passed: boolean
+    issues: string[]
+    suggestions: string[]
+    confidence: number
+    needsCorrection: boolean
+  }
 }

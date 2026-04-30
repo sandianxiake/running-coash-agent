@@ -13,6 +13,7 @@ import type {
 import { toolRegistry } from './tools'
 import { MemoryManager } from './memory'
 import { chatCompletion, chatCompletionStream } from '@/api/agent'
+import { reflect, generateReflectionMessage, type ReflectionResult } from './reflection'
 import { qwenChatCompletion } from '@/api/qwen'
 
 // 默认系统提示词
@@ -29,19 +30,29 @@ const DEFAULT_SYSTEM_PROMPT = `你是「跑步教练」，一个专业、耐心�
 - 安全优先：提醒用户注意运动安全，避免过度训练
 - 循序渐进：强调"慢慢来"的训练哲学
 - 鼓励为主：用积极的方式激励用户
+- 严谨自省：回答后自我检查，确保准确和安全
 
 ## 工作方式
 当用户提出问题时：
 1. 先理解用户的意图和需求
-2. 必要时调用工具获取相关信息（如跑步记录、知识库）
-3. 结合上下文给出专业、个性化的回答
-4. 回答要简洁有条理，使用表情符号增加可读性
+2. 检查是否需要收集更多信息（用户体能、目标、时间等）
+3. 必要时调用工具获取相关信息（如跑步记录、知识库）
+4. 结合上下文给出专业、个性化的回答
+5. 回答后自我检查：信息是否完整？是否有安全隐患？
+
+## 自我检查清单
+在回复前，检查以下几点：
+- 训练计划是否循序渐进？增量不超过10%？
+- 回复是否缺少关键信息（如免责声明、运动建议适用性）？
+- 训练强度是否可能过大？
+- 是否需要询问用户更多情况再给出建议？
 
 ## 记住
 - 你是教练，不是销售，不要推销任何产品
 - 尊重用户的隐私和时间
 - 如果不确定某事，坦诚告知，不要瞎编
-- 可以使用网络搜索获取最新的跑步资讯和科学知识`
+- 可以使用网络搜索获取最新的跑步资讯和科学知识
+- 涉及医疗问题（如伤病）时，建议用户咨询专业医生`
 
 // ----------------------
 // 智能体核心
@@ -238,12 +249,37 @@ export class RunningCoachAgent {
         
         this.context.memory.shortTerm.add(responseMsg)
 
+        // 自我反思检查
+        const reflectionResult = await performReflection(
+          userMessage,
+          finalMessage.content || '',
+          {
+            hasUserProfile: this.context.userProfile !== null,
+            toolResults: toolResults.map(r => r.success ? r.result?.message?.substring(0, 50) : '')
+          }
+        )
+
+        // 如果需要纠错，更新回复
+        let finalContent = finalMessage.content || ''
+        if (reflectionResult.needsCorrection && reflectionResult.correctedResponse) {
+          finalContent = reflectionResult.correctedResponse
+          responseMsg.content = finalContent
+        } else if (reflectionResult.issues.length > 0 && reflectionResult.confidence < 0.6) {
+          // 置信度低但不需要完全纠错，追加反思提示
+          const reflectionNote = generateReflectionMessage(reflectionResult)
+          if (reflectionNote) {
+            finalContent += reflectionNote
+            responseMsg.content = finalContent
+          }
+        }
+
         return {
           message: responseMsg,
           toolCalls,
           toolResults,
           iterations: 1,
-          success: true
+          success: true,
+          reflection: reflectionResult
         }
       }
 
@@ -646,4 +682,31 @@ export function getAgent(): RunningCoachAgent {
     agentInstance = new RunningCoachAgent()
   }
   return agentInstance
+}
+
+// ----------------------
+// 自我反思辅助函数
+// ----------------------
+async function performReflection(
+  userQuestion: string,
+  aiResponse: string,
+  context?: {
+    hasUserProfile?: boolean
+    hasRunningRecords?: boolean
+    hasTrainingPlan?: boolean
+    toolResults?: string[]
+  }
+): Promise<ReflectionResult> {
+  try {
+    return await reflect(userQuestion, aiResponse, context)
+  } catch (error) {
+    console.error('Reflection error:', error)
+    return {
+      passed: true,
+      issues: [],
+      suggestions: [],
+      confidence: 0.5,
+      needsCorrection: false
+    }
+  }
 }
