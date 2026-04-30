@@ -533,78 +533,62 @@ const RUNNING_KNOWLEDGE = [
 ]
 
 // ============================================
-// Embedding 缓存（避免重复计算）
+// 使用 Chat API 做语义匹配（替代 Embedding）
 // ============================================
-let knowledgeEmbeddings: number[][] | null = null
+async function getRelevantTopics(query: string, topK: number = 3): Promise<{ item: typeof RUNNING_KNOWLEDGE[0]; relevance: number }[]> {
+  // 构建知识库主题列表
+  const topicsList = RUNNING_KNOWLEDGE.map((item, index) => 
+    `${index + 1}. ${item.topic}: ${item.keywords.join(', ')}`
+  ).join('\n')
 
-// ============================================
-// 向量相似度计算（余弦相似度）
-// ============================================
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dotProduct = 0
-  let normA = 0
-  let normB = 0
-  
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i]
-    normA += a[i] * a[i]
-    normB += b[i] * b[i]
-  }
-  
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
-}
+  const prompt = `用户问题：${query}
 
-// ============================================
-// 生成文本 Embedding
-// ============================================
-async function getEmbedding(text: string): Promise<number[]> {
-  const response = await fetch(`${DEEPSEEK_BASE_URL}/embeddings`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      input: text
+知识库主题列表：
+${topicsList}
+
+请找出与用户问题最相关的3个主题编号（1-${RUNNING_KNOWLEDGE.length}），只输出编号，用逗号分隔。
+
+例如：如果问题是"跑步时膝盖疼"，输出应该是"6"（跑步伤痛）`
+
+  try {
+    const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 50,
+        temperature: 0.3
+      })
     })
-  })
 
-  if (!response.ok) {
-    throw new Error(`Embedding API error: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content || ''
+    
+    // 解析返回的编号
+    const numbers = content.match(/\d+/g)?.map(Number) || []
+    
+    // 返回匹配的主题
+    return numbers
+      .filter(n => n >= 1 && n <= RUNNING_KNOWLEDGE.length)
+      .slice(0, topK)
+      .map(n => ({
+        item: RUNNING_KNOWLEDGE[n - 1],
+        relevance: 1 - (numbers.indexOf(n) * 0.2)  // 排序越前相关性越高
+      }))
+  } catch (e) {
+    console.warn('语义匹配失败:', e)
+    return []
   }
-
-  const data = await response.json()
-  return data.data[0].embedding
-}
-
-// ============================================
-// 预计算知识库 Embedding
-// ============================================
-async function initKnowledgeEmbeddings(): Promise<number[][]> {
-  if (knowledgeEmbeddings) {
-    return knowledgeEmbeddings
-  }
-
-  console.log('正在初始化知识库 Embedding...')
-  
-  // 将主题、关键词、内容合并生成检索文本
-  const embeddingTexts = RUNNING_KNOWLEDGE.map(item => 
-    `${item.topic} ${item.keywords.join(' ')} ${item.content}`
-  )
-
-  // 批量获取 embedding
-  const embeddings: number[][] = []
-  for (const text of embeddingTexts) {
-    const embedding = await getEmbedding(text)
-    embeddings.push(embedding)
-    // 添加小延迟避免 API 限流
-    await new Promise(resolve => setTimeout(resolve, 50))
-  }
-
-  knowledgeEmbeddings = embeddings
-  console.log('知识库 Embedding 初始化完成')
-  return embeddings
 }
 
 // ============================================
@@ -650,53 +634,44 @@ class WebSearchService {
     return scored
   }
 
-  // 语义搜索（异步，使用 Embedding）
-  async searchBySemantic(query: string, embeddings: number[][], topK: number = 3): Promise<{ item: typeof RUNNING_KNOWLEDGE[0]; score: number }[]> {
+  // 语义搜索（使用 Chat API）
+  async searchBySemantic(query: string, topK: number = 3): Promise<{ item: typeof RUNNING_KNOWLEDGE[0]; score: number }[]> {
     try {
-      const queryEmbedding = await getEmbedding(query)
-      
-      const scored = RUNNING_KNOWLEDGE.map((item, index) => ({
-        item,
-        score: cosineSimilarity(queryEmbedding, embeddings[index])
-      }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, topK)
-
-      return scored
+      return await getRelevantTopics(query, topK)
     } catch (e) {
-      console.error('语义搜索失败:', e)
+      console.warn('语义搜索失败:', e)
       return []
     }
   }
 
   // 混合搜索（关键词 + 语义）
-  async searchHybrid(query: string, embeddings: number[][], topK: number = 3): Promise<string[]> {
+  async searchHybrid(query: string, topK: number = 3): Promise<string[]> {
     // 关键词搜索结果
     const keywordResults = this.searchByKeyword(query, topK * 2)
     
-    // 语义搜索结果
-    const semanticResults = await this.searchBySemantic(query, embeddings, topK * 2)
+    // 语义搜索结果（使用 Chat API）
+    const semanticResults = await this.searchBySemantic(query, topK * 2)
 
     // 合并去重，按综合得分排序
     const combined = new Map<number, { item: typeof RUNNING_KNOWLEDGE[0]; score: number }>()
     
-    // 关键词结果（权重 0.4）
+    // 关键词结果（权重 0.5）
     for (const r of keywordResults) {
       const existing = combined.get(r.item.id)
       if (existing) {
-        existing.score += r.score * 0.4
+        existing.score += r.score * 0.5
       } else {
-        combined.set(r.item.id, { item: r.item, score: r.score * 0.4 })
+        combined.set(r.item.id, { item: r.item, score: r.score * 0.5 })
       }
     }
 
-    // 语义结果（权重 0.6，相似度 * 100 归一化）
+    // 语义结果（权重 0.5）
     for (const r of semanticResults) {
       const existing = combined.get(r.item.id)
       if (existing) {
-        existing.score += r.score * 60
+        existing.score += r.relevance * 50
       } else {
-        combined.set(r.item.id, { item: r.item, score: r.score * 60 })
+        combined.set(r.item.id, { item: r.item, score: r.relevance * 50 })
       }
     }
 
@@ -710,11 +685,7 @@ class WebSearchService {
 
   // 搜索内置知识库（兼容旧接口）
   async searchBuiltInKnowledge(query: string, topK: number = 3): Promise<string[]> {
-    // 初始化 embedding（如需要）
-    const embeddings = await initKnowledgeEmbeddings()
-    
-    // 使用混合搜索
-    return this.searchHybrid(query, embeddings, topK)
+    return this.searchHybrid(query, topK)
   }
 
   // 搜索接口（使用 DeepSeek API 进行知识增强）
@@ -778,11 +749,8 @@ class WebSearchService {
     summary?: string;
     source: 'internal' | 'external' | 'hybrid';
   }> {
-    // 初始化知识库 embedding
-    const embeddings = await initKnowledgeEmbeddings()
-
-    // 搜索内置知识库（混合检索）
-    const builtInKnowledge = await this.searchHybrid(query, embeddings, topK)
+    // 搜索内置知识库（混合检索：关键词 + Chat API 语义）
+    const builtInKnowledge = await this.searchHybrid(query, topK)
 
     // 尝试外部搜索
     let externalResults = undefined
