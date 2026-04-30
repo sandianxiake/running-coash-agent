@@ -6,16 +6,16 @@ project_type = "web"
 preview_enable = "enabled"
 
 [dev]
-build = ["bash", "running-coash-agent/scripts/coze-preview-build.sh"]
-run = ["bash", "running-coash-agent/scripts/coze-preview-run.sh"]
+build = ["bash", "scripts/coze-preview-build.sh"]
+run = ["bash", "scripts/coze-preview-run.sh"]
 
 [deploy]
-build = ["bash", "running-coash-agent/scripts/build.sh"]
-run = ["bash", "running-coash-agent/scripts/run.sh"]
+build = ["bash", "scripts/build.sh"]
+run = ["bash", "scripts/run.sh"]
 
 [deploy.profile]
 kind = "service"
 flavor = "web"
 
 [subprojects]
-path = ["running-coash-agent"]
+path = ["."]
