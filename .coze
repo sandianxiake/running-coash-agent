@@ -1,6 +1,9 @@
 [project]
+sub_id = "a1b2c3d4"
+name = "running-coach-agent"
 requires = ["nodejs-24"]
 project_type = "web"
+entrypoint = "index.html"
 
 [preview]
 preview_enable = "enabled"
