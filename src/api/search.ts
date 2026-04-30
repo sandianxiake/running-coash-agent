@@ -493,7 +493,7 @@ const RUNNING_KNOWLEDGE = [
   {
     id: 24,
     topic: '跑步APP与数据',
-    keywords: ['APP', '数据', '记录', '分析', 'Garmin', 'Keep', '悦跑圈', '高驰', 'COROS', '华为', 'Fit'],
+    keywords: ['APP', '数据', '记录', '分析', 'Garmin', 'Keep', '悦跑圈', '高驰', 'COROS', '华为', 'Fit', 'Watch', 'GT'],
     content: `跑步数据记录：
 【常用APP】
 • Keep：功能全面，适合新手
@@ -508,9 +508,13 @@ const RUNNING_KNOWLEDGE = [
   - COROS Pace：高性价比跑步手表
   - 支持训练负荷、恢复时间、跑步动态分析
 • 华为（Huawei）：
-  - Huawei Watch GT Runner：专业跑步手表
-  - Huawei Watch Fit 系列：轻便入门，适合日常跑步
-  - 支持 GPS、心率、跑步指数分析
+  - Huawei Watch GT 系列：长续航经典，支持跑步轨迹、心率、血氧
+    - GT Runner：专业跑步手表，轻量化设计
+    - GT 4/5：日常运动兼顾，GPS精准
+  - Huawei Watch 系列：智能全功能
+    - Watch 4/5：支持心电、血氧、导航
+    - Watch Fit 系列：轻便入门，适合日常跑步，屏幕大性价比高
+  - 支持跑步指数、恢复时间、训练负荷分析
 • Apple Watch：日常使用方便，生态整合好
 • 小米/荣耀：性价比高，基础功能齐全
 
