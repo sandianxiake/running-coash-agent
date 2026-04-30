@@ -52,9 +52,38 @@ running-coach-agent/
 - **搜索服务**: `src/api/search.ts` - 内置知识库 + 通义千问 API
 
 ## 运行与预览
-- **开发预览**: `pnpm exec vite --host 0.0.0.0 --port 5000`
+- **开发预览**: `bash scripts/coze-preview-run.sh` 或 `pnpm exec vite --host 0.0.0.0 --port 5000`
 - **生产构建**: `pnpm vite build`
 - **部署运行**: `serve dist -p 5000 -s` (静态服务)
+
+## Coze 平台配置
+
+### 目录结构
+```
+/workspace/projects/           # 工作区根目录
+├── .coze                      # 根配置（Coze 平台入口）
+└── running-coash-agent/       # Git 仓库根目录
+    ├── .coze                  # 子项目配置
+    └── ...
+```
+
+### 根 .coze 配置
+- 路径: `/workspace/projects/.coze`
+- 不提交到 Git（已在 `.gitignore` 中排除）
+- 包含 `[dev]` 和 `[deploy]` 配置
+
+### 环境变量（部署时）
+```
+VITE_DEEPSEEK_API_KEY = sk-9efc53fac08d4369b3d26b1ae37eb7ea
+```
+
+### 预览脚本
+- `scripts/coze-preview-build.sh`: 安装依赖
+- `scripts/coze-preview-run.sh`: 启动 Vite 开发服务器（端口 5000）
+
+### 部署脚本
+- `scripts/build.sh`: 生产构建（支持环境变量注入）
+- `scripts/run.sh`: 生产运行（serve 静态服务，端口 5000）
 
 ## 已实现功能
 
