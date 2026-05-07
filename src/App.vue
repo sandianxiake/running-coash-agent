@@ -568,10 +568,6 @@ function updateRadarChart() {
     { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Math.round(v)}ml/kg/min` : '-' }
   ]
 
-  // 维度名称列表
-  const dimensionNames = ['总时间', '总距离', '配速', '心率', '步幅', '步频', '摄氧量']
-  let currentHoverIndex = -1
-  
   radarChart.setOption({
     tooltip: {
       show: true,
@@ -580,13 +576,7 @@ function updateRadarChart() {
       borderColor: '#4CAF50',
       borderWidth: 1,
       padding: [10, 15],
-      textStyle: { color: '#333', fontSize: 12 },
-      formatter: (params: any) => {
-        if (!params || currentHoverIndex < 0 || currentHoverIndex >= metricsData.length) return ''
-        const m = metricsData[currentHoverIndex]
-        return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
-                <div>${m.format(m.value)}</div>`
-      }
+      textStyle: { color: '#333', fontSize: 12 }
     },
     radar: {
       indicator: [
@@ -618,59 +608,15 @@ function updateRadarChart() {
       type: 'radar',
       data: [{
         value: radarData,
-        name: '能力值',
+        name: '',
         lineStyle: { color: '#4CAF50', width: 2 },
         areaStyle: { color: 'rgba(76, 175, 80, 0.4)' },
         itemStyle: { color: '#4CAF50' },
         symbol: 'circle',
         symbolSize: 6
       }]
-    }]
-  })
-  
-  // 监听鼠标移动，计算当前悬停的维度
-  radarChart.getZr().on('mousemove', (e: any) => {
-    const pointInGrid = radarChart.convertFromPixel('grid', [e.offsetX, e.offsetY])
-    if (!pointInGrid || !radarChart.getModel()) return
-    
-    // 获取雷达图中心点和半径
-    const radarModel = radarChart.getModel()
-    const radarCoordSys = radarModel.getComponent('radar')
-    if (!radarCoordSys) return
-    
-    // 计算雷达图边界
-    const option = radarChart.getOption()
-    const gridOption = option.grid?.[0]
-    const radarOption = option.radar?.[0]
-    
-    if (!gridOption || !radarOption) return
-    
-    const centerX = gridOption.left + (gridOption.width || 200) / 2
-    const centerY = gridOption.top + (gridOption.height || 200) / 2
-    const radius = Math.min(gridOption.width || 200, gridOption.height || 200) / 2 - 40
-    
-    // 计算鼠标相对于中心的位置
-    const dx = e.offsetX - centerX
-    const dy = e.offsetY - centerY
-    const distance = Math.sqrt(dx * dx + dy * dy)
-    
-    // 只在雷达图范围内计算
-    if (distance > radius * 1.5) {
-      currentHoverIndex = -1
-      return
     }
-    
-    // 计算角度，确定维度索引
-    // 雷达图从顶部开始，顺时针排列各维度
-    let angle = Math.atan2(dy, dx) + Math.PI / 2 // 从顶部开始
-    if (angle < 0) angle += Math.PI * 2
-    
-    const dimensions = radarOption.indicator?.length || 7
-    const angleStep = Math.PI * 2 / dimensions
-    const index = Math.round(angle / angleStep) % dimensions
-    
-    currentHoverIndex = index >= 0 && index < dimensions ? index : -1
-  })
+  ]}, true)
 }
 
 // 刷新数据
