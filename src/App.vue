@@ -576,7 +576,19 @@ function updateRadarChart() {
       borderColor: '#4CAF50',
       borderWidth: 1,
       padding: [10, 15],
-      textStyle: { color: '#333', fontSize: 12 }
+      textStyle: { color: '#333', fontSize: 12 },
+      formatter: (params: any) => {
+        // params.name 是维度名称（如"总时间"、"配速"等）
+        // params.value 是该维度的归一化值（0-100）
+        if (!params || !params.name) return ''
+        
+        const idx = metricsData.findIndex(m => m.label === params.name)
+        if (idx < 0) return ''
+        
+        const m = metricsData[idx]
+        return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
+                <div>${m.format(m.value)}</div>`
+      }
     },
     radar: {
       indicator: [
