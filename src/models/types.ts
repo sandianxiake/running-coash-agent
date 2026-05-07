@@ -28,7 +28,8 @@ export interface RunningRecord {
   notes?: string
   actualDistance?: number
   actualDuration?: number
-  createdAt: string
+  runningDate: string  // 跑步的实际日期（YYYY-MM-DD）
+  createdAt: string    // 记录创建时间
 }
 
 export interface Workout {

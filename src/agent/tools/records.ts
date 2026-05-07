@@ -69,6 +69,10 @@ export const addRecordTool: Tool = {
       notes: {
         type: 'string',
         description: '备注说明（可选）'
+      },
+      runningDate: {
+        type: 'string',
+        description: '跑步的实际日期，格式YYYY-MM-DD，如 "2024-05-04"（可选，默认使用今天）'
       }
     },
     required: ['distance', 'duration', 'pace']
@@ -83,6 +87,7 @@ export const addRecordTool: Tool = {
       feeling: args.feeling || '一般',
       weather: args.weather,
       notes: args.notes,
+      runningDate: args.runningDate || new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString()
     }
     

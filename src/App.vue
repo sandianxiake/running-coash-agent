@@ -112,6 +112,9 @@ watch(showDataPanel, async (newVal) => {
 
 // 加载用户数据
 function loadUserData() {
+  // 获取跑步日期（优先使用 runningDate，兼容旧数据）
+  const getRunningDate = (record: any) => record.runningDate || record.createdAt
+  
   const records = getRunningRecords()
   if (records.length > 0) {
     const totalDistance = records.reduce((sum, r) => sum + r.distance, 0)
@@ -122,17 +125,17 @@ function loadUserData() {
       totalRuns: records.length,
       totalDistance: Math.round(totalDistance * 10) / 10,
       avgPace: `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}`,
-      currentStreak: calculateStreak(records)
+      currentStreak: calculateStreak(records, getRunningDate)
     }
   }
 }
 
 // 计算连续跑步天数
-function calculateStreak(records: any[]): number {
+function calculateStreak(records: any[], getRunningDate: (r: any) => string): number {
   if (records.length === 0) return 0
   
   const sortedRecords = [...records].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    new Date(getRunningDate(b)).getTime() - new Date(getRunningDate(a)).getTime()
   )
   
   let streak = 0
@@ -140,7 +143,7 @@ function calculateStreak(records: any[]): number {
   currentDate.setHours(0, 0, 0, 0)
   
   for (const record of sortedRecords) {
-    const recordDate = new Date(record.createdAt)
+    const recordDate = new Date(getRunningDate(record))
     recordDate.setHours(0, 0, 0, 0)
     
     const diffDays = Math.floor((currentDate.getTime() - recordDate.getTime()) / (24 * 60 * 60 * 1000))
@@ -190,6 +193,9 @@ function updateWeeklyChart() {
   const records = getRunningRecords()
   const now = new Date()
   
+  // 获取跑步日期（兼容旧数据）
+  const getRunningDate = (r: any) => r.runningDate || r.createdAt
+  
   let data: { date: string; distance: number }[] = []
   let title = ''
   let xAxisData: string[] = []
@@ -202,7 +208,7 @@ function updateWeeklyChart() {
       date.setDate(now.getDate() - i)
       const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
       const dayRecords = records.filter(r => {
-        const rDate = new Date(r.createdAt)
+        const rDate = new Date(getRunningDate(r))
         return rDate.toDateString() === date.toDateString()
       })
       const dayDistance = dayRecords.reduce((sum, r) => sum + r.distance, 0)
@@ -221,7 +227,7 @@ function updateWeeklyChart() {
           const date = new Date(now)
           date.setDate(now.getDate() - (29 - dayIndex))
           const dayRecords = records.filter(r => {
-            const rDate = new Date(r.createdAt)
+            const rDate = new Date(getRunningDate(r))
             return rDate.toDateString() === date.toDateString()
           })
           weekDistance[d] = dayRecords.reduce((sum, r) => sum + r.distance, 0)
@@ -237,7 +243,7 @@ function updateWeeklyChart() {
       const date = new Date(now.getFullYear(), now.getMonth() - m, 1)
       const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
       const monthRecords = records.filter(r => {
-        const rDate = new Date(r.createdAt)
+        const rDate = new Date(getRunningDate(r))
         return rDate.getFullYear() === date.getFullYear() && rDate.getMonth() === date.getMonth()
       })
       const monthDistance = monthRecords.reduce((sum, r) => sum + r.distance, 0)
