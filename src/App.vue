@@ -497,11 +497,11 @@ function updateRadarChart() {
     ? recordsWithCadence.reduce((sum, r) => sum + (r.avgCadence || 0), 0) / recordsWithCadence.length
     : 0
   
-  // 7. 最大摄氧量（如果有）
+  // 7. 最大摄氧量（如果有，默认40）
   const recordsWithVO2 = records.filter(r => r.vo2Max && r.vo2Max > 0)
   const avgVO2Max = recordsWithVO2.length > 0
     ? recordsWithVO2.reduce((sum, r) => sum + (r.vo2Max || 0), 0) / recordsWithVO2.length
-    : 0
+    : 40
   
   // 计算归一化值（0-100）
   // 假设合理范围：时间0-1000分钟，距离0-500公里，配速3-10分钟/公里，心率120-180，步幅0.5-1.5米，步频140-200，摄氧量25-60
@@ -561,16 +561,16 @@ function updateRadarChart() {
       shape: 'polygon',
       splitNumber: 4,
       axisName: {
-        color: '#666',
+        color: '#333',
         fontSize: 11
       },
       splitLine: {
-        lineStyle: { color: '#ddd' }
+        lineStyle: { color: '#FF6B6B', width: 1 }
       },
       splitArea: {
         show: true,
         areaStyle: {
-          color: ['#f8f8f8', '#f0f0f0', '#e8e8e8', '#e0e0e0']
+          color: ['rgba(255, 107, 107, 0.05)', 'rgba(255, 107, 107, 0.1)', 'rgba(255, 107, 107, 0.15)', 'rgba(255, 107, 107, 0.2)']
         }
       }
     },
@@ -580,7 +580,7 @@ function updateRadarChart() {
         value: radarData,
         name: '能力值',
         lineStyle: { color: '#FF6B6B', width: 2 },
-        areaStyle: { color: 'rgba(255, 107, 107, 0.3)' },
+        areaStyle: { color: 'rgba(255, 107, 107, 0.4)' },
         itemStyle: { color: '#FF6B6B' },
         symbol: 'circle',
         symbolSize: 6
