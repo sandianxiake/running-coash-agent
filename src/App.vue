@@ -576,7 +576,11 @@ function updateRadarChart() {
       borderColor: '#4CAF50',
       borderWidth: 1,
       padding: [10, 15],
-      textStyle: { color: '#333', fontSize: 12 }
+      textStyle: { color: '#333', fontSize: 12 },
+      formatter: (params: any) => {
+        console.log('params:', params)
+        return ''
+      }
     },
     radar: {
       indicator: [
@@ -616,45 +620,6 @@ function updateRadarChart() {
       }]
     }
   ]}, true)
-  
-  // 监听鼠标移动来显示 tooltip
-  radarChart.getZr().on('mousemove', (e: any) => {
-    if (!radarChartRef.value) return
-    const w = radarChartRef.value.offsetWidth
-    const h = radarChartRef.value.offsetHeight
-    const cx = w / 2
-    const cy = h / 2
-    const r = Math.min(w, h) / 2 - 40
-    
-    const dx = e.offsetX - cx
-    const dy = e.offsetY - cy
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    
-    if (dist < r * 1.2) {
-      let angle = Math.atan2(dy, dx) + Math.PI / 2
-      if (angle < 0) angle += Math.PI * 2
-      
-      const dimCount = 7
-      const dimAngle = Math.PI * 2 / dimCount
-      let idx = Math.floor(angle / dimAngle)
-      if (idx < 0) idx = 0
-      if (idx >= dimCount) idx = dimCount - 1
-      
-      const m = metricsData[idx]
-      if (m) {
-        radarChart.dispatchAction({
-          type: 'showTip',
-          seriesIndex: 0,
-          dataIndex: idx
-        })
-        radarChart.setOption({
-          tooltip: {
-            formatter: () => `<div style="font-weight:bold;color:#4CAF50">${m.label}</div><div>${m.format(m.value)}</div>`
-          }
-        }, false)
-      }
-    }
-  })
 }
 
 // 刷新数据
