@@ -576,17 +576,7 @@ function updateRadarChart() {
       borderColor: '#4CAF50',
       borderWidth: 1,
       padding: [10, 15],
-      textStyle: { color: '#333', fontSize: 12 },
-      formatter: (params: any) => {
-        if (!params || params.dataIndex === undefined) return ''
-        const idx = params.dataIndex
-        if (idx >= 0 && idx < metricsData.length) {
-          const m = metricsData[idx]
-          return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
-                  <div>${m.format(m.value)}</div>`
-        }
-        return ''
-      }
+      textStyle: { color: '#333', fontSize: 12 }
     },
     radar: {
       indicator: [
@@ -626,6 +616,53 @@ function updateRadarChart() {
       }]
     }
   ]}, true)
+  
+  // 监听雷达图鼠标事件来显示 tooltip
+  let currentDimIdx = 0
+  radarChart.on('mouseover', (params: any) => {
+    // 根据 params 确定维度索引
+    if (params.dataIndex !== undefined) {
+      currentDimIdx = params.dataIndex
+    }
+  })
+  
+  // 监听鼠标移动，在雷达图区域内计算维度
+  radarChart.getZr().on('mousemove', (e: any) => {
+    if (!radarChartRef.value) return
+    const w = radarChartRef.value.offsetWidth
+    const h = radarChartRef.value.offsetHeight
+    const cx = w / 2
+    const cy = h / 2
+    const r = Math.min(w, h) / 2 - 30
+    
+    const dx = e.offsetX - cx
+    const dy = e.offsetY - cy
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    
+    // 只在雷达图范围内处理
+    if (dist < r) {
+      // 从顶部开始计算角度（顶部是 0°）
+      let angle = Math.atan2(dy, dx) + Math.PI / 2
+      if (angle < 0) angle += Math.PI * 2
+      
+      const dimCount = 7
+      const dimAngle = Math.PI * 2 / dimCount
+      let idx = Math.floor(angle / dimAngle)
+      if (idx < 0) idx = 0
+      if (idx >= dimCount) idx = dimCount - 1
+      
+      if (idx !== currentDimIdx) {
+        currentDimIdx = idx
+        const m = metricsData[idx]
+        // 显示 tooltip
+        radarChart.dispatchAction({
+          type: 'showTip',
+          seriesIndex: 0,
+          dataIndex: idx
+        })
+      }
+    }
+  })
 }
 
 // 刷新数据
