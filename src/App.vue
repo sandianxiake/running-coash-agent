@@ -41,6 +41,9 @@ const quickQuestions = ref<string[]>([])
 // 数据面板显示状态
 const showDataPanel = ref(false)
 
+// 消息列表滚动引用
+const messagesRef = ref<HTMLDivElement | null>(null)
+
 // 周期类型：week, month, year
 const periodType = ref<'week' | 'month' | 'year'>('week')
 
@@ -549,11 +552,11 @@ function updateRadarChart() {
         // 指标名称映射
         const labelMap: Record<string, { label: string; format: (v: number) => string }> = {
           '总时间': { label: '总时间', format: (v) => `${Math.round(totalDuration)}分钟` },
-          '总距离': { label: '总距离', format: (v) => `${Math.round(totalDistance * 10) / 10}km` },
+          '总距离': { label: '总距离', format: (v) => `${totalDistance.toFixed(2)}km` },
           '配速': { label: '配速', format: (v) => avgPace > 0 ? `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}/km` : '-' },
           '心率': { label: '心率', format: (v) => avgHeartRate > 0 ? `${Math.round(avgHeartRate)}bpm` : '-' },
           '步幅': { label: '步幅', format: (v) => avgStride > 0 ? `${avgStride.toFixed(2)}m` : '-' },
-          '步频': { label: '步频', format: (v) => avgCadence > 0 ? `${Math.round(avgCadence)}spm` : '-' },
+          '步频': { label: '步频', format: (v) => avgCadence > 0 ? `${avgCadence.toFixed(2)}spm` : '-' },
           '摄氧量': { label: '摄氧量', format: (v) => avgVO2Max > 0 ? `${avgVO2Max.toFixed(1)}ml/kg/min` : '-' }
         }
         
@@ -581,12 +584,12 @@ function updateRadarChart() {
         fontSize: 11
       },
       splitLine: {
-        lineStyle: { color: '#2196F3', width: 1 }
+        lineStyle: { color: '#4CAF50', width: 1 }
       },
       splitArea: {
         show: true,
         areaStyle: {
-          color: ['rgba(33, 150, 243, 0.05)', 'rgba(33, 150, 243, 0.1)', 'rgba(33, 150, 243, 0.15)', 'rgba(33, 150, 243, 0.2)']
+          color: ['rgba(76, 175, 80, 0.05)', 'rgba(76, 175, 80, 0.1)', 'rgba(76, 175, 80, 0.15)', 'rgba(76, 175, 80, 0.2)']
         }
       }
     },
@@ -595,9 +598,9 @@ function updateRadarChart() {
       data: [{
         value: radarData,
         name: '能力值',
-        lineStyle: { color: '#2196F3', width: 2 },
-        areaStyle: { color: 'rgba(33, 150, 243, 0.4)' },
-        itemStyle: { color: '#2196F3' },
+        lineStyle: { color: '#4CAF50', width: 2 },
+        areaStyle: { color: 'rgba(76, 175, 80, 0.4)' },
+        itemStyle: { color: '#4CAF50' },
         symbol: 'circle',
         symbolSize: 6
       }]
