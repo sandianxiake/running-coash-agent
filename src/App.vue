@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { getAgent, type Message } from './agent'
 import { generateQuickQuestions } from './api/agent'
 import * as echarts from 'echarts'
@@ -75,6 +75,21 @@ onMounted(async () => {
   // 初始化图表
   await nextTick()
   initCharts()
+})
+
+// 监听抽屉打开，重新渲染图表
+watch(showDataPanel, async (newVal) => {
+  if (newVal) {
+    await nextTick()
+    // 延迟一点确保 DOM 已渲染
+    setTimeout(() => {
+      initCharts()
+      // 触发图表 resize
+      if (weeklyChart) weeklyChart.resize()
+      if (paceChart) paceChart.resize()
+      if (planChart) planChart.resize()
+    }, 100)
+  }
 })
 
 // 加载用户数据
