@@ -546,25 +546,30 @@ function updateRadarChart() {
     tooltip: {
       trigger: 'item',
       formatter: (params: any) => {
-        const name = params.name
-        const value = params.value
+        // 维度数据映射（按 radar indicator 顺序）
+        const metrics = [
+          { label: '总时间', value: totalDuration, format: (v: number) => `${Math.round(v)}分钟` },
+          { label: '总距离', value: totalDistance, format: (v: number) => `${Number(v).toFixed(2)}km` },
+          { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}/km` : '-' },
+          { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
+          { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}m` : '-' },
+          { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}spm` : '-' },
+          { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}ml/kg/min` : '-' }
+        ]
         
-        // 指标名称映射
-        const labelMap: Record<string, { label: string; format: (v: number) => string }> = {
-          '总时间': { label: '总时间', format: (v) => `${Math.round(totalDuration)}分钟` },
-          '总距离': { label: '总距离', format: (v) => `${totalDistance.toFixed(2)}km` },
-          '配速': { label: '配速', format: (v) => avgPace > 0 ? `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}/km` : '-' },
-          '心率': { label: '心率', format: (v) => avgHeartRate > 0 ? `${Math.round(avgHeartRate)}bpm` : '-' },
-          '步幅': { label: '步幅', format: (v) => avgStride > 0 ? `${avgStride.toFixed(2)}m` : '-' },
-          '步频': { label: '步频', format: (v) => avgCadence > 0 ? `${avgCadence.toFixed(2)}spm` : '-' },
-          '摄氧量': { label: '摄氧量', format: (v) => avgVO2Max > 0 ? `${avgVO2Max.toFixed(1)}ml/kg/min` : '-' }
+        const idx = params.dataIndex
+        if (idx >= 0 && idx < metrics.length) {
+          return `${metrics[idx].label}: ${metrics[idx].format(metrics[idx].value)}`
         }
         
-        const config = labelMap[name]
-        if (config) {
-          return `${config.label}: ${config.format(value)}`
+        // 兜底：尝试用 name 匹配
+        const name = params.name || ''
+        const matched = metrics.find(m => m.label.includes(name) || name.includes(m.label))
+        if (matched) {
+          return `${matched.label}: ${matched.format(matched.value)}`
         }
-        return `${name}: ${value}`
+        
+        return `${name}: ${params.value}`
       }
     },
     radar: {
