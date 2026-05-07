@@ -260,10 +260,15 @@ function updateWeeklyChart() {
         }
       }
       
-      // 显示日期范围，如 "5/1-5/7"
-      const dateRange = startDate && endDate 
-        ? `${startDate.getMonth() + 1}/${startDate.getDate()}-${endDate.getMonth() + 1}/${endDate.getDate()}`
-        : `第${weeks - w}周`
+      // 显示日期范围，如 "5/1-5/7" 或 "5/30-6/5"
+      let dateRange = `第${weeks - w}周`
+      if (startDate && endDate) {
+        const startStr = `${startDate.getMonth() + 1}/${startDate.getDate()}`
+        const endStr = startDate.getMonth() === endDate.getMonth()
+          ? `${endDate.getDate()}`
+          : `${endDate.getMonth() + 1}/${endDate.getDate()}`
+        dateRange = `${startStr}-${endStr}`
+      }
       xAxisData.push(dateRange)
       data.push({ date: dateRange, distance: weekDistance.reduce((a, b) => a + b, 0) })
     }
