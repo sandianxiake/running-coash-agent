@@ -505,15 +505,15 @@ function updateRadarChart() {
     : 0
   
   // 5. 平均步幅（米）
-  const recordsWithStride = records.filter(r => r.avgStride && r.avgStride > 0)
+  const recordsWithStride = records.filter(r => r.stride && r.stride > 0)
   const avgStride = recordsWithStride.length > 0
-    ? recordsWithStride.reduce((sum, r) => sum + (r.avgStride || 0), 0) / recordsWithStride.length
+    ? recordsWithStride.reduce((sum, r) => sum + (r.stride || 0), 0) / recordsWithStride.length
     : 0
   
   // 6. 平均步频（步/分钟）
-  const recordsWithCadence = records.filter(r => r.avgCadence && r.avgCadence > 0)
+  const recordsWithCadence = records.filter(r => r.cadence && r.cadence > 0)
   const avgCadence = recordsWithCadence.length > 0
-    ? recordsWithCadence.reduce((sum, r) => sum + (r.avgCadence || 0), 0) / recordsWithCadence.length
+    ? recordsWithCadence.reduce((sum, r) => sum + (r.cadence || 0), 0) / recordsWithCadence.length
     : 0
   
   // 7. 最大摄氧量（如果有，默认40）

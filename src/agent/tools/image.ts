@@ -213,6 +213,10 @@ export const saveImageRecordTool: Tool = {
         type: 'number',
         description: '步频'
       },
+      stride: {
+        type: 'number',
+        description: '步幅（米）'
+      },
       calories: {
         type: 'number',
         description: '卡路里'
@@ -229,7 +233,7 @@ export const saveImageRecordTool: Tool = {
     required: ['distance', 'duration', 'pace']
   },
   execute: async (args): Promise<ToolExecutionResult> => {
-    const { distance, duration, pace, avgHeartRate, cadence, calories, notes, sourceImage } = args
+    const { distance, duration, pace, avgHeartRate, cadence, stride, calories, notes, sourceImage } = args
 
     // 生成配速格式
     let paceStr = pace
@@ -246,10 +250,12 @@ export const saveImageRecordTool: Tool = {
       pace: paceStr,
       avgHeartRate,
       cadence,
+      stride,
       calories,
       notes: notes || '',
       sourceImage: sourceImage ? `data:image/jpeg;base64,${sourceImage}` : undefined,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      runningDate: new Date().toISOString().split('T')[0]
     }
 
     // 保存到 localStorage
@@ -267,6 +273,7 @@ export const saveImageRecordTool: Tool = {
 • 配速：${paceStr}/km
 ${avgHeartRate ? `• 心率：${avgHeartRate} bpm` : ''}
 ${cadence ? `• 步频：${cadence} spm` : ''}
+${stride ? `• 步幅：${stride} m` : ''}
 ${calories ? `• 卡路里：${calories} kcal` : ''}
 ${notes ? `• 备注：${notes}` : ''}
 

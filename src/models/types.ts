@@ -30,6 +30,8 @@ export interface RunningRecord {
   actualDuration?: number
   runningDate: string  // 跑步的实际日期（YYYY-MM-DD）
   createdAt: string    // 记录创建时间
+  cadence?: number     // 平均步频（步/分钟）
+  stride?: number       // 平均步幅（米）
 }
 
 export interface Workout {
