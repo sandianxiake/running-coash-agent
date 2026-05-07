@@ -578,7 +578,13 @@ function updateRadarChart() {
       padding: [10, 15],
       textStyle: { color: '#333', fontSize: 12 },
       formatter: (params: any) => {
-        console.log('params:', params)
+        if (!params || params.dataIndex === undefined) return ''
+        const idx = params.dataIndex
+        if (idx >= 0 && idx < metricsData.length) {
+          const m = metricsData[idx]
+          return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
+                  <div>${m.format(m.value)}</div>`
+        }
         return ''
       }
     },
