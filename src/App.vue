@@ -566,14 +566,11 @@ function updateRadarChart() {
         if (!params || !params.value) return ''
         
         const idx = params.dataIndex >= 0 ? params.dataIndex : 0
-        const labels = ['总时间', '总距离', '配速', '心率', '步幅', '步频', '摄氧量']
         
         if (idx >= 0 && idx < metricsData.length) {
           const m = metricsData[idx]
-          const radarScore = params.value[idx] || 0
-          return `<div style="font-weight:bold;color:#4CAF50;margin-bottom:5px">${m.label}</div>
-                  <div>数值: ${m.format(m.value)}</div>
-                  <div style="color:#999;font-size:11px">评分: ${radarScore.toFixed(0)}分</div>`
+          return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
+                  <div>${m.format(m.value)}</div>`
         }
         
         return params.name || ''
