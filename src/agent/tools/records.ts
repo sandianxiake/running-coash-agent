@@ -103,11 +103,26 @@ export const addRecordTool: Tool = {
     
     storageAddRecord(newRecord)
     
+    // 格式化时长为 xx小时xx分钟xx秒
+    const formatDuration = (minutes: number) => {
+      const totalSeconds = Math.round(minutes * 60)
+      const hours = Math.floor(totalSeconds / 3600)
+      const mins = Math.floor((totalSeconds % 3600) / 60)
+      const secs = totalSeconds % 60
+      if (hours > 0) {
+        return `${hours}小时${mins}分钟${secs}秒`
+      } else if (mins > 0) {
+        return `${mins}分钟${secs}秒`
+      } else {
+        return `${secs}秒`
+      }
+    }
+    
     return {
       success: true,
       data: {
         record: newRecord,
-        message: `跑步记录已添加：${args.distance}公里，用时${args.duration}分钟`
+        message: `跑步记录已添加：${args.distance}公里，用时${formatDuration(args.duration)}`
       }
     }
   }

@@ -393,12 +393,12 @@ function updatePaceChart() {
       type: 'line',
       data: paceData.map(d => d.pace),
       smooth: true,
-      lineStyle: { color: '#2196F3', width: 2 },
-      itemStyle: { color: '#2196F3' },
+      lineStyle: { color: '#4CAF50', width: 2 },
+      itemStyle: { color: '#4CAF50' },
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(33, 150, 243, 0.3)' },
-          { offset: 1, color: 'rgba(33, 150, 243, 0.05)' }
+          { offset: 0, color: 'rgba(76, 175, 80, 0.3)' },
+          { offset: 1, color: 'rgba(76, 175, 80, 0.05)' }
         ])
       }
     }],
@@ -543,37 +543,53 @@ function updateRadarChart() {
   ]
   
   // 准备各维度的原始数据（用于 tooltip）
+  // 格式化时长为 xx小时xx分钟xx秒
+  const formatDurationHMS = (minutes: number) => {
+    const totalSeconds = Math.round(minutes * 60)
+    const hours = Math.floor(totalSeconds / 3600)
+    const mins = Math.floor((totalSeconds % 3600) / 60)
+    const secs = totalSeconds % 60
+    if (hours > 0) {
+      return `${hours}小时${mins}分钟${secs}秒`
+    } else if (mins > 0) {
+      return `${mins}分钟${secs}秒`
+    } else {
+      return `${secs}秒`
+    }
+  }
+  
   const metricsData = [
-    { label: '总时间', value: totalDuration, format: (v: number) => `${Math.round(v)}分钟` },
+    { label: '总时间', value: totalDuration, format: (v: number) => formatDurationHMS(v) },
     { label: '总距离', value: totalDistance, format: (v: number) => `${Number(v).toFixed(2)}km` },
     { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}/km` : '-' },
     { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
     { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Math.round(v * 100)}cm` : '-' },
-    { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}spm` : '-' },
-    { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}ml/kg/min` : '-' }
+    { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Math.round(v)}spm` : '-' },
+    { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Math.round(v)}ml/kg/min` : '-' }
   ]
 
   radarChart.setOption({
     tooltip: {
       show: true,
-      trigger: 'item',
+      trigger: 'axis',
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#4CAF50',
       borderWidth: 1,
       padding: [10, 15],
       textStyle: { color: '#333', fontSize: 12 },
       formatter: (params: any) => {
-        if (!params || !params.value) return ''
+        if (!params || params.length === 0) return ''
         
-        const idx = params.dataIndex >= 0 ? params.dataIndex : 0
-        
-        if (idx >= 0 && idx < metricsData.length) {
-          const m = metricsData[idx]
-          return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
-                  <div>${m.format(m.value)}</div>`
-        }
-        
-        return params.name || ''
+        // 遍历所有维度，显示各自数据
+        let html = '<div style="min-width:120px">'
+        params.forEach((p: any) => {
+          if (p.dataIndex >= 0 && p.dataIndex < metricsData.length) {
+            const m = metricsData[p.dataIndex]
+            html += `<div style="margin:4px 0"><span style="color:#4CAF50;font-weight:bold">${m.label}:</span> ${m.format(m.value)}</div>`
+          }
+        })
+        html += '</div>'
+        return html
       }
     },
     radar: {
