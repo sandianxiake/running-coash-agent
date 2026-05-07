@@ -49,12 +49,25 @@ const periodLabel = computed(() => {
   return periodType.value === 'week' ? '周' : periodType.value === 'month' ? '月' : '年'
 })
 
+// 滚动到底部
+function scrollToBottom() {
+  if (messagesRef.value) {
+    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
+  }
+}
+
 // 切换周期
 function switchPeriod(period: 'week' | 'month' | 'year') {
   periodType.value = period
   updateWeeklyChart()
   if (weeklyChart) weeklyChart.resize()
 }
+
+// 监听消息变化，自动滚动到底部
+watch(() => messages.value.length, async () => {
+  await nextTick()
+  scrollToBottom()
+})
 
 // 初始化
 onMounted(async () => {
@@ -71,6 +84,10 @@ onMounted(async () => {
       timestamp: Date.now()
     })
   }
+
+  // 滚动到最新消息
+  await nextTick()
+  scrollToBottom()
 
   // 加载用户数据
   loadUserData()
