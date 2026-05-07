@@ -555,27 +555,28 @@ function updateRadarChart() {
 
   radarChart.setOption({
     tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'line'
-      },
-      formatter: (params: any[]) => {
-        if (!params || params.length === 0) return ''
-        const param = params[0]
+      show: true,
+      trigger: 'item',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#4CAF50',
+      borderWidth: 1,
+      padding: [10, 15],
+      textStyle: { color: '#333', fontSize: 12 },
+      formatter: (params: any) => {
+        if (!params || !params.value) return ''
         
-        // 从 data.original 中获取该维度的原始数据
-        const original = param.data?.original
-        if (original && original.length > 0) {
-          // 返回所有维度的数据
-          let result = '<div style="font-size:12px">'
-          original.forEach((item: any, idx: number) => {
-            const radarValue = radarData[idx] || 0
-            result += `<div>${item.label}: ${item.format(item.value)} <span style="color:#999">(${radarValue.toFixed(0)}分)</span></div>`
-          })
-          result += '</div>'
-          return result
+        const idx = params.dataIndex >= 0 ? params.dataIndex : 0
+        const labels = ['总时间', '总距离', '配速', '心率', '步幅', '步频', '摄氧量']
+        
+        if (idx >= 0 && idx < metricsData.length) {
+          const m = metricsData[idx]
+          const radarScore = params.value[idx] || 0
+          return `<div style="font-weight:bold;color:#4CAF50;margin-bottom:5px">${m.label}</div>
+                  <div>数值: ${m.format(m.value)}</div>
+                  <div style="color:#999;font-size:11px">评分: ${radarScore.toFixed(0)}分</div>`
         }
-        return param.name || ''
+        
+        return params.name || ''
       }
     },
     radar: {
