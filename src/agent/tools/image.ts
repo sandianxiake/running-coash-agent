@@ -215,7 +215,7 @@ export const saveImageRecordTool: Tool = {
       },
       stride: {
         type: 'number',
-        description: '步幅（米）'
+        description: '步幅（厘米）'
       },
       calories: {
         type: 'number',
@@ -273,7 +273,7 @@ export const saveImageRecordTool: Tool = {
 • 配速：${paceStr}/km
 ${avgHeartRate ? `• 心率：${avgHeartRate} bpm` : ''}
 ${cadence ? `• 步频：${cadence} spm` : ''}
-${stride ? `• 步幅：${stride} m` : ''}
+${stride ? `• 步幅：${stride}cm` : ''}
 ${calories ? `• 卡路里：${calories} kcal` : ''}
 ${notes ? `• 备注：${notes}` : ''}
 

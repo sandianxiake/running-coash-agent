@@ -80,7 +80,7 @@ export const addRecordTool: Tool = {
       },
       stride: {
         type: 'number',
-        description: '平均步幅（米），如1.2'
+        description: '平均步幅（厘米）'
       }
     },
     required: ['distance', 'duration', 'pace']

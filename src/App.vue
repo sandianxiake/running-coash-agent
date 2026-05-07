@@ -523,7 +523,7 @@ function updateRadarChart() {
     : 40
   
   // 计算归一化值（0-100）
-  // 假设合理范围：时间0-1000分钟，距离0-500公里，配速3-10分钟/公里，心率120-180，步幅0.5-1.5米，步频140-200，摄氧量25-60
+  // 假设合理范围：时间0-1000分钟，距离0-500公里，配速3-10分钟/公里，心率120-180，步幅50-150厘米，步频140-200，摄氧量25-60
   const normalize = (value: number, min: number, max: number, invert: boolean = false) => {
     if (value === 0) return 0
     let normalized = ((value - min) / (max - min)) * 100
@@ -537,7 +537,7 @@ function updateRadarChart() {
     normalize(totalDistance, 0, 500),          // 总距离（越大越好）
     normalize(avgPace, 3, 10, true),           // 配速（越小越好，所以 invert）
     normalize(avgHeartRate, 120, 180),         // 心率（适中最好，这里简化处理）
-    normalize(avgStride, 0.5, 1.5),             // 步幅
+    normalize(avgStride, 50, 150),             // 步幅（厘米）
     normalize(avgCadence, 140, 200),            // 步频
     normalize(avgVO2Max, 25, 60)                // 最大摄氧量
   ]
@@ -548,7 +548,7 @@ function updateRadarChart() {
     { label: '总距离', value: totalDistance, format: (v: number) => `${Number(v).toFixed(2)}km` },
     { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}/km` : '-' },
     { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
-    { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}m` : '-' },
+    { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Math.round(v * 100)}cm` : '-' },
     { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}spm` : '-' },
     { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}ml/kg/min` : '-' }
   ]
