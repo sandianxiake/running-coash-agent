@@ -18,9 +18,11 @@ const agent = getAgent()
 const weeklyChartRef = ref<HTMLDivElement | null>(null)
 const paceChartRef = ref<HTMLDivElement | null>(null)
 const planChartRef = ref<HTMLDivElement | null>(null)
+const radarChartRef = ref<HTMLDivElement | null>(null)
 let weeklyChart: echarts.ECharts | null = null
 let paceChart: echarts.ECharts | null = null
 let planChart: echarts.ECharts | null = null
+let radarChart: echarts.ECharts | null = null
 
 // 数据统计
 const stats = ref({
