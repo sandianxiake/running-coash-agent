@@ -542,34 +542,40 @@ function updateRadarChart() {
     normalize(avgVO2Max, 25, 60)                // 最大摄氧量
   ]
   
+  // 准备各维度的原始数据（用于 tooltip）
+  const metricsData = [
+    { label: '总时间', value: totalDuration, format: (v: number) => `${Math.round(v)}分钟` },
+    { label: '总距离', value: totalDistance, format: (v: number) => `${Number(v).toFixed(2)}km` },
+    { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}/km` : '-' },
+    { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
+    { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}m` : '-' },
+    { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}spm` : '-' },
+    { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}ml/kg/min` : '-' }
+  ]
+
   radarChart.setOption({
     tooltip: {
-      trigger: 'item',
-      formatter: (params: any) => {
-        // 维度数据映射（按 radar indicator 顺序）
-        const metrics = [
-          { label: '总时间', value: totalDuration, format: (v: number) => `${Math.round(v)}分钟` },
-          { label: '总距离', value: totalDistance, format: (v: number) => `${Number(v).toFixed(2)}km` },
-          { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}/km` : '-' },
-          { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
-          { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}m` : '-' },
-          { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}spm` : '-' },
-          { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Number(v).toFixed(2)}ml/kg/min` : '-' }
-        ]
+      trigger: 'axis',
+      axisPointer: {
+        type: 'line'
+      },
+      formatter: (params: any[]) => {
+        if (!params || params.length === 0) return ''
+        const param = params[0]
         
-        const idx = params.dataIndex
-        if (idx >= 0 && idx < metrics.length) {
-          return `${metrics[idx].label}: ${metrics[idx].format(metrics[idx].value)}`
+        // 从 data.original 中获取该维度的原始数据
+        const original = param.data?.original
+        if (original && original.length > 0) {
+          // 返回所有维度的数据
+          let result = '<div style="font-size:12px">'
+          original.forEach((item: any, idx: number) => {
+            const radarValue = radarData[idx] || 0
+            result += `<div>${item.label}: ${item.format(item.value)} <span style="color:#999">(${radarValue.toFixed(0)}分)</span></div>`
+          })
+          result += '</div>'
+          return result
         }
-        
-        // 兜底：尝试用 name 匹配
-        const name = params.name || ''
-        const matched = metrics.find(m => m.label.includes(name) || name.includes(m.label))
-        if (matched) {
-          return `${matched.label}: ${matched.format(matched.value)}`
-        }
-        
-        return `${name}: ${params.value}`
+        return param.name || ''
       }
     },
     radar: {
@@ -603,6 +609,8 @@ function updateRadarChart() {
       data: [{
         value: radarData,
         name: '能力值',
+        // 保存原始数据用于 tooltip
+        original: metricsData,
         lineStyle: { color: '#4CAF50', width: 2 },
         areaStyle: { color: 'rgba(76, 175, 80, 0.4)' },
         itemStyle: { color: '#4CAF50' },
