@@ -459,11 +459,6 @@ function updateRadarChart() {
   
   if (records.length < 3) {
     radarChart.setOption({
-      title: {
-        text: '六边形战士',
-        left: 'center',
-        textStyle: { fontSize: 14, fontWeight: 'normal' }
-      },
       graphic: [{
         type: 'text',
         left: 'center',
@@ -529,26 +524,28 @@ function updateRadarChart() {
   ]
   
   radarChart.setOption({
-    title: {
-      text: '六边形战士',
-      left: 'center',
-      textStyle: { fontSize: 14, fontWeight: 'normal' }
-    },
     tooltip: {
       trigger: 'item',
       formatter: (params: any) => {
-        const idx = params.dataIndex
-        const labels = ['总时间', '总距离', '配速', '心率', '步幅', '步频', '摄氧量']
-        const values = [
-          `${Math.round(totalDuration)}分钟`,
-          `${Math.round(totalDistance * 10) / 10}km`,
-          avgPace > 0 ? `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}/km` : '-',
-          avgHeartRate > 0 ? `${Math.round(avgHeartRate)}bpm` : '-',
-          avgStride > 0 ? `${avgStride.toFixed(2)}m` : '-',
-          avgCadence > 0 ? `${Math.round(avgCadence)}spm` : '-',
-          avgVO2Max > 0 ? `${avgVO2Max.toFixed(1)}ml/kg/min` : '-'
-        ]
-        return `${labels[idx]}: ${values[idx]}`
+        const name = params.name
+        const value = params.value
+        
+        // 指标名称映射
+        const labelMap: Record<string, { label: string; format: (v: number) => string }> = {
+          '总时间': { label: '总时间', format: (v) => `${Math.round(totalDuration)}分钟` },
+          '总距离': { label: '总距离', format: (v) => `${Math.round(totalDistance * 10) / 10}km` },
+          '配速': { label: '配速', format: (v) => avgPace > 0 ? `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}/km` : '-' },
+          '心率': { label: '心率', format: (v) => avgHeartRate > 0 ? `${Math.round(avgHeartRate)}bpm` : '-' },
+          '步幅': { label: '步幅', format: (v) => avgStride > 0 ? `${avgStride.toFixed(2)}m` : '-' },
+          '步频': { label: '步频', format: (v) => avgCadence > 0 ? `${Math.round(avgCadence)}spm` : '-' },
+          '摄氧量': { label: '摄氧量', format: (v) => avgVO2Max > 0 ? `${avgVO2Max.toFixed(1)}ml/kg/min` : '-' }
+        }
+        
+        const config = labelMap[name]
+        if (config) {
+          return `${config.label}: ${config.format(value)}`
+        }
+        return `${name}: ${value}`
       }
     },
     radar: {
