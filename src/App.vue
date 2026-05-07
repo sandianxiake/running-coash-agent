@@ -236,16 +236,22 @@ function updateWeeklyChart() {
       xAxisData.push(dateStr)
     }
   } else if (periodType.value === 'month') {
-    // 近30天，按周分组
+    // 近30天，按周分组显示日期范围
     title = '近30天跑量'
     const weeks = 4
     for (let w = weeks - 1; w >= 0; w--) {
       const weekDistance = [0, 0, 0, 0, 0, 0, 0]
+      let startDate: Date | null = null
+      let endDate: Date | null = null
+      
       for (let d = 0; d < 7; d++) {
         const dayIndex = (weeks - 1 - w) * 7 + d
         if (dayIndex < 30) {
           const date = new Date(now)
           date.setDate(now.getDate() - (29 - dayIndex))
+          if (!startDate || date < startDate) startDate = date
+          if (!endDate || date > endDate) endDate = date
+          
           const dayRecords = records.filter(r => {
             const rDate = new Date(getRunningDate(r))
             return rDate.toDateString() === date.toDateString()
@@ -253,8 +259,13 @@ function updateWeeklyChart() {
           weekDistance[d] = dayRecords.reduce((sum, r) => sum + r.distance, 0)
         }
       }
-      xAxisData.push(`第${weeks - w}周`)
-      data.push({ date: `第${weeks - w}周`, distance: weekDistance.reduce((a, b) => a + b, 0) })
+      
+      // 显示日期范围，如 "5/1-5/7"
+      const dateRange = startDate && endDate 
+        ? `${startDate.getMonth() + 1}/${startDate.getDate()}-${endDate.getMonth() + 1}/${endDate.getDate()}`
+        : `第${weeks - w}周`
+      xAxisData.push(dateRange)
+      data.push({ date: dateRange, distance: weekDistance.reduce((a, b) => a + b, 0) })
     }
   } else {
     // 近12个月
@@ -565,12 +576,12 @@ function updateRadarChart() {
         fontSize: 11
       },
       splitLine: {
-        lineStyle: { color: '#FF6B6B', width: 1 }
+        lineStyle: { color: '#2196F3', width: 1 }
       },
       splitArea: {
         show: true,
         areaStyle: {
-          color: ['rgba(255, 107, 107, 0.05)', 'rgba(255, 107, 107, 0.1)', 'rgba(255, 107, 107, 0.15)', 'rgba(255, 107, 107, 0.2)']
+          color: ['rgba(33, 150, 243, 0.05)', 'rgba(33, 150, 243, 0.1)', 'rgba(33, 150, 243, 0.15)', 'rgba(33, 150, 243, 0.2)']
         }
       }
     },
@@ -579,9 +590,9 @@ function updateRadarChart() {
       data: [{
         value: radarData,
         name: '能力值',
-        lineStyle: { color: '#FF6B6B', width: 2 },
-        areaStyle: { color: 'rgba(255, 107, 107, 0.4)' },
-        itemStyle: { color: '#FF6B6B' },
+        lineStyle: { color: '#2196F3', width: 2 },
+        areaStyle: { color: 'rgba(33, 150, 243, 0.4)' },
+        itemStyle: { color: '#2196F3' },
         symbol: 'circle',
         symbolSize: 6
       }]
