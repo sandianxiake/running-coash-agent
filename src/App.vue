@@ -474,8 +474,14 @@ function updateRadarChart() {
     ? recordsWithCadence.reduce((sum, r) => sum + (r.avgCadence || 0), 0) / recordsWithCadence.length
     : 0
   
+  // 7. 最大摄氧量（如果有）
+  const recordsWithVO2 = records.filter(r => r.vo2Max && r.vo2Max > 0)
+  const avgVO2Max = recordsWithVO2.length > 0
+    ? recordsWithVO2.reduce((sum, r) => sum + (r.vo2Max || 0), 0) / recordsWithVO2.length
+    : 0
+  
   // 计算归一化值（0-100）
-  // 假设合理范围：时间0-1000分钟，距离0-500公里，配速3-10分钟/公里，心率120-180，步幅0.5-1.5米，步频140-200
+  // 假设合理范围：时间0-1000分钟，距离0-500公里，配速3-10分钟/公里，心率120-180，步幅0.5-1.5米，步频140-200，摄氧量25-60
   const normalize = (value: number, min: number, max: number, invert: boolean = false) => {
     if (value === 0) return 0
     let normalized = ((value - min) / (max - min)) * 100
@@ -490,7 +496,8 @@ function updateRadarChart() {
     normalize(avgPace, 3, 10, true),           // 配速（越小越好，所以 invert）
     normalize(avgHeartRate, 120, 180),         // 心率（适中最好，这里简化处理）
     normalize(avgStride, 0.5, 1.5),             // 步幅
-    normalize(avgCadence, 140, 200)             // 步频
+    normalize(avgCadence, 140, 200),            // 步频
+    normalize(avgVO2Max, 25, 60)                // 最大摄氧量
   ]
   
   radarChart.setOption({
@@ -503,14 +510,15 @@ function updateRadarChart() {
       trigger: 'item',
       formatter: (params: any) => {
         const idx = params.dataIndex
-        const labels = ['总时间', '总距离', '配速', '心率', '步幅', '步频']
+        const labels = ['总时间', '总距离', '配速', '心率', '步幅', '步频', '摄氧量']
         const values = [
           `${Math.round(totalDuration)}分钟`,
           `${Math.round(totalDistance * 10) / 10}km`,
           avgPace > 0 ? `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}/km` : '-',
           avgHeartRate > 0 ? `${Math.round(avgHeartRate)}bpm` : '-',
           avgStride > 0 ? `${avgStride.toFixed(2)}m` : '-',
-          avgCadence > 0 ? `${Math.round(avgCadence)}spm` : '-'
+          avgCadence > 0 ? `${Math.round(avgCadence)}spm` : '-',
+          avgVO2Max > 0 ? `${avgVO2Max.toFixed(1)}ml/kg/min` : '-'
         ]
         return `${labels[idx]}: ${values[idx]}`
       }
@@ -522,7 +530,8 @@ function updateRadarChart() {
         { name: '配速', max: 100 },
         { name: '心率', max: 100 },
         { name: '步幅', max: 100 },
-        { name: '步频', max: 100 }
+        { name: '步频', max: 100 },
+        { name: '摄氧量', max: 100 }
       ],
       shape: 'polygon',
       splitNumber: 4,
