@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { getAgent, type Message } from './agent'
 import { generateQuickQuestions } from './api/agent'
 import * as echarts from 'echarts'
@@ -38,6 +38,21 @@ const quickQuestions = ref<string[]>([])
 
 // 数据面板显示状态
 const showDataPanel = ref(false)
+
+// 周期类型：week, month, year
+const periodType = ref<'week' | 'month' | 'year'>('week')
+
+// 周期标签
+const periodLabel = computed(() => {
+  return periodType.value === 'week' ? '周' : periodType.value === 'month' ? '月' : '年'
+})
+
+// 切换周期
+function switchPeriod(period: 'week' | 'month' | 'year') {
+  periodType.value = period
+  updateWeeklyChart()
+  if (weeklyChart) weeklyChart.resize()
+}
 
 // 初始化
 onMounted(async () => {
@@ -88,6 +103,7 @@ watch(showDataPanel, async (newVal) => {
       if (weeklyChart) weeklyChart.resize()
       if (paceChart) paceChart.resize()
       if (planChart) planChart.resize()
+      if (radarChart) radarChart.resize()
     }, 100)
   }
 })
@@ -157,34 +173,80 @@ function initCharts() {
     planChart = echarts.init(planChartRef.value)
     updatePlanChart()
   }
+  
+  // 六边形战士雷达图
+  if (radarChartRef.value) {
+    radarChart = echarts.init(radarChartRef.value)
+    updateRadarChart()
+  }
 }
 
-// 更新周跑量图表
+// 更新跑量图表（支持周/月/年）
 function updateWeeklyChart() {
   if (!weeklyChart) return
   
   const records = getRunningRecords()
   const now = new Date()
   
-  // 计算近7天每天的跑量
-  const last7Days: { date: string; distance: number }[] = []
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(now)
-    date.setDate(now.getDate() - i)
-    const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
-    
-    const dayRecords = records.filter(r => {
-      const rDate = new Date(r.createdAt)
-      return rDate.toDateString() === date.toDateString()
-    })
-    
-    const dayDistance = dayRecords.reduce((sum, r) => sum + r.distance, 0)
-    last7Days.push({ date: dateStr, distance: dayDistance })
+  let data: { date: string; distance: number }[] = []
+  let title = ''
+  let xAxisData: string[] = []
+  
+  if (periodType.value === 'week') {
+    // 近7天
+    title = '近7天跑量'
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now)
+      date.setDate(now.getDate() - i)
+      const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
+      const dayRecords = records.filter(r => {
+        const rDate = new Date(r.createdAt)
+        return rDate.toDateString() === date.toDateString()
+      })
+      const dayDistance = dayRecords.reduce((sum, r) => sum + r.distance, 0)
+      data.push({ date: dateStr, distance: dayDistance })
+      xAxisData.push(dateStr)
+    }
+  } else if (periodType.value === 'month') {
+    // 近30天，按周分组
+    title = '近30天跑量'
+    const weeks = 4
+    for (let w = weeks - 1; w >= 0; w--) {
+      const weekDistance = [0, 0, 0, 0, 0, 0, 0]
+      for (let d = 0; d < 7; d++) {
+        const dayIndex = (weeks - 1 - w) * 7 + d
+        if (dayIndex < 30) {
+          const date = new Date(now)
+          date.setDate(now.getDate() - (29 - dayIndex))
+          const dayRecords = records.filter(r => {
+            const rDate = new Date(r.createdAt)
+            return rDate.toDateString() === date.toDateString()
+          })
+          weekDistance[d] = dayRecords.reduce((sum, r) => sum + r.distance, 0)
+        }
+      }
+      xAxisData.push(`第${weeks - w}周`)
+      data.push({ date: `第${weeks - w}周`, distance: weekDistance.reduce((a, b) => a + b, 0) })
+    }
+  } else {
+    // 近12个月
+    title = '近12个月跑量'
+    for (let m = 11; m >= 0; m--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - m, 1)
+      const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      const monthRecords = records.filter(r => {
+        const rDate = new Date(r.createdAt)
+        return rDate.getFullYear() === date.getFullYear() && rDate.getMonth() === date.getMonth()
+      })
+      const monthDistance = monthRecords.reduce((sum, r) => sum + r.distance, 0)
+      data.push({ date: monthStr, distance: monthDistance })
+      xAxisData.push(`${date.getMonth() + 1}月`)
+    }
   }
   
   weeklyChart.setOption({
     title: {
-      text: '近7天跑量',
+      text: title,
       left: 'center',
       textStyle: { fontSize: 14, fontWeight: 'normal' }
     },
@@ -194,7 +256,7 @@ function updateWeeklyChart() {
     },
     xAxis: {
       type: 'category',
-      data: last7Days.map(d => d.date)
+      data: xAxisData
     },
     yAxis: {
       type: 'value',
@@ -203,7 +265,7 @@ function updateWeeklyChart() {
     },
     series: [{
       type: 'bar',
-      data: last7Days.map(d => d.distance),
+      data: data.map(d => d.distance),
       itemStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
           { offset: 0, color: '#4CAF50' },
@@ -361,12 +423,145 @@ function updatePlanChart() {
   })
 }
 
+// 更新六边形战士雷达图
+function updateRadarChart() {
+  if (!radarChart) return
+  
+  const records = getRunningRecords()
+  
+  if (records.length < 3) {
+    radarChart.setOption({
+      title: {
+        text: '六边形战士',
+        left: 'center',
+        textStyle: { fontSize: 14, fontWeight: 'normal' }
+      },
+      graphic: [{
+        type: 'text',
+        left: 'center',
+        top: 'middle',
+        style: { text: '数据不足，请至少记录3次跑步', fill: '#999', fontSize: 12 }
+      }]
+    })
+    return
+  }
+  
+  // 计算各项指标
+  // 1. 总跑步时间（分钟）
+  const totalDuration = records.reduce((sum, r) => sum + r.duration, 0)
+  
+  // 2. 总跑步距离（公里）
+  const totalDistance = records.reduce((sum, r) => sum + r.distance, 0)
+  
+  // 3. 平均配速（分钟/公里，转换为数值，越小越好）
+  const avgPace = totalDuration / totalDistance
+  
+  // 4. 平均心率（如果有）
+  const recordsWithHR = records.filter(r => r.avgHeartRate && r.avgHeartRate > 0)
+  const avgHeartRate = recordsWithHR.length > 0 
+    ? recordsWithHR.reduce((sum, r) => sum + (r.avgHeartRate || 0), 0) / recordsWithHR.length 
+    : 0
+  
+  // 5. 平均步幅（米）
+  const recordsWithStride = records.filter(r => r.avgStride && r.avgStride > 0)
+  const avgStride = recordsWithStride.length > 0
+    ? recordsWithStride.reduce((sum, r) => sum + (r.avgStride || 0), 0) / recordsWithStride.length
+    : 0
+  
+  // 6. 平均步频（步/分钟）
+  const recordsWithCadence = records.filter(r => r.avgCadence && r.avgCadence > 0)
+  const avgCadence = recordsWithCadence.length > 0
+    ? recordsWithCadence.reduce((sum, r) => sum + (r.avgCadence || 0), 0) / recordsWithCadence.length
+    : 0
+  
+  // 计算归一化值（0-100）
+  // 假设合理范围：时间0-1000分钟，距离0-500公里，配速3-10分钟/公里，心率120-180，步幅0.5-1.5米，步频140-200
+  const normalize = (value: number, min: number, max: number, invert: boolean = false) => {
+    if (value === 0) return 0
+    let normalized = ((value - min) / (max - min)) * 100
+    if (normalized > 100) normalized = 100
+    if (normalized < 0) normalized = 0
+    return invert ? 100 - normalized : normalized
+  }
+  
+  const radarData = [
+    normalize(totalDuration, 0, 1000),        // 总时间（越大越好）
+    normalize(totalDistance, 0, 500),          // 总距离（越大越好）
+    normalize(avgPace, 3, 10, true),           // 配速（越小越好，所以 invert）
+    normalize(avgHeartRate, 120, 180),         // 心率（适中最好，这里简化处理）
+    normalize(avgStride, 0.5, 1.5),             // 步幅
+    normalize(avgCadence, 140, 200)             // 步频
+  ]
+  
+  radarChart.setOption({
+    title: {
+      text: '六边形战士',
+      left: 'center',
+      textStyle: { fontSize: 14, fontWeight: 'normal' }
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: (params: any) => {
+        const idx = params.dataIndex
+        const labels = ['总时间', '总距离', '配速', '心率', '步幅', '步频']
+        const values = [
+          `${Math.round(totalDuration)}分钟`,
+          `${Math.round(totalDistance * 10) / 10}km`,
+          avgPace > 0 ? `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}/km` : '-',
+          avgHeartRate > 0 ? `${Math.round(avgHeartRate)}bpm` : '-',
+          avgStride > 0 ? `${avgStride.toFixed(2)}m` : '-',
+          avgCadence > 0 ? `${Math.round(avgCadence)}spm` : '-'
+        ]
+        return `${labels[idx]}: ${values[idx]}`
+      }
+    },
+    radar: {
+      indicator: [
+        { name: '总时间', max: 100 },
+        { name: '总距离', max: 100 },
+        { name: '配速', max: 100 },
+        { name: '心率', max: 100 },
+        { name: '步幅', max: 100 },
+        { name: '步频', max: 100 }
+      ],
+      shape: 'polygon',
+      splitNumber: 4,
+      axisName: {
+        color: '#666',
+        fontSize: 11
+      },
+      splitLine: {
+        lineStyle: { color: '#ddd' }
+      },
+      splitArea: {
+        show: true,
+        areaStyle: {
+          color: ['#f8f8f8', '#f0f0f0', '#e8e8e8', '#e0e0e0']
+        }
+      }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: radarData,
+        name: '能力值',
+        lineStyle: { color: '#FF6B6B', width: 2 },
+        areaStyle: { color: 'rgba(255, 107, 107, 0.3)' },
+        itemStyle: { color: '#FF6B6B' },
+        symbol: 'circle',
+        symbolSize: 6
+      }]
+    }]
+  })
+}
+
 // 刷新数据
 function refreshData() {
   loadUserData()
   updateWeeklyChart()
   updatePaceChart()
   updatePlanChart()
+  updateRadarChart()
 }
 
 // 发送消息（流式）
@@ -542,14 +737,34 @@ function askQuestion(question: string) {
 
           <!-- 图表区域 -->
           <div class="charts-container" v-if="stats.totalRuns > 0">
-            <div class="chart-title">📈 周跑量统计</div>
+            <!-- 周期切换 -->
+            <div class="period-switch">
+              <button 
+                :class="{ active: periodType === 'week' }"
+                @click="switchPeriod('week')"
+              >周</button>
+              <button 
+                :class="{ active: periodType === 'month' }"
+                @click="switchPeriod('month')"
+              >月</button>
+              <button 
+                :class="{ active: periodType === 'year' }"
+                @click="switchPeriod('year')"
+              >年</button>
+            </div>
+
+            <div class="chart-title">📈 {{ periodLabel }}跑量统计</div>
             <div class="chart-wrapper" ref="weeklyChartRef"></div>
             
             <div class="chart-title">📉 配速趋势</div>
             <div class="chart-wrapper" ref="paceChartRef"></div>
             
-            <div class="chart-title">🥧 训练计划进度</div>
+            <div class="chart-title">🎯 训练计划进度</div>
             <div class="chart-wrapper" ref="planChartRef"></div>
+
+            <!-- 六边形战士 -->
+            <div class="chart-title">🏆 六边形战士</div>
+            <div class="chart-wrapper" ref="radarChartRef"></div>
           </div>
         </div>
       </div>
@@ -815,6 +1030,35 @@ function askQuestion(question: string) {
 /* 图表 */
 .charts-container {
   margin-top: 16px;
+}
+
+/* 周期切换按钮 */
+.period-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  justify-content: center;
+}
+
+.period-switch button {
+  padding: 6px 16px;
+  font-size: 12px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #666;
+}
+
+.period-switch button:hover {
+  background: #e8e8e8;
+}
+
+.period-switch button.active {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
 }
 
 .chart-title {
