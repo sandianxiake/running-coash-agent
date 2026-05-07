@@ -36,6 +36,9 @@ const streamingMessageId = ref<string | null>(null)
 // 快捷问题（由 AI 动态生成）
 const quickQuestions = ref<string[]>([])
 
+// 数据面板显示状态
+const showDataPanel = ref(false)
+
 // 初始化
 onMounted(async () => {
   // 恢复聊天记录
@@ -480,41 +483,65 @@ function askQuestion(question: string) {
 
 <template>
   <div class="app-container">
-    <!-- 头部 -->
+    <!-- 固定头部 -->
     <header class="header">
       <h1>🏃 跑步教练 Agent</h1>
-      <button class="clear-btn" @click="clearChat">清空对话</button>
+      <div class="header-actions">
+        <button class="data-btn" @click="showDataPanel = true">📊 数据</button>
+        <button class="clear-btn" @click="clearChat">清空对话</button>
+      </div>
     </header>
 
-    <!-- 数据统计卡片 -->
-    <div class="stats-cards" v-if="stats.totalRuns > 0">
-      <div class="stat-card">
-        <div class="stat-value">{{ stats.totalRuns }}</div>
-        <div class="stat-label">总跑步</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ stats.totalDistance }}</div>
-        <div class="stat-label">总公里</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ stats.avgPace }}</div>
-        <div class="stat-label">平均配速</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ stats.currentStreak }}</div>
-        <div class="stat-label">连续天数</div>
-      </div>
-    </div>
+    <!-- 数据侧边抽屉 -->
+    <div class="drawer-overlay" v-if="showDataPanel" @click="showDataPanel = false">
+      <div class="drawer" @click.stop>
+        <div class="drawer-header">
+          <h2>📊 数据统计</h2>
+          <button class="drawer-close" @click="showDataPanel = false">×</button>
+        </div>
+        
+        <div class="drawer-content">
+          <!-- 数据统计卡片 -->
+          <div class="stats-cards" v-if="stats.totalRuns > 0">
+            <div class="stat-card">
+              <div class="stat-value">{{ stats.totalRuns }}</div>
+              <div class="stat-label">总跑步</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ stats.totalDistance }}</div>
+              <div class="stat-label">总公里</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ stats.avgPace }}</div>
+              <div class="stat-label">平均配速</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ stats.currentStreak }}</div>
+              <div class="stat-label">连续天数</div>
+            </div>
+          </div>
 
-    <!-- 图表区域 -->
-    <div class="charts-container" v-if="stats.totalRuns > 0">
-      <div class="chart-wrapper" ref="weeklyChartRef"></div>
-      <div class="chart-wrapper" ref="paceChartRef"></div>
-      <div class="chart-wrapper" ref="planChartRef"></div>
+          <div v-else class="no-data">
+            暂无跑步数据，请先记录你的跑步吧！
+          </div>
+
+          <!-- 图表区域 -->
+          <div class="charts-container" v-if="stats.totalRuns > 0">
+            <div class="chart-title">📈 周跑量统计</div>
+            <div class="chart-wrapper" ref="weeklyChartRef"></div>
+            
+            <div class="chart-title">📉 配速趋势</div>
+            <div class="chart-wrapper" ref="paceChartRef"></div>
+            
+            <div class="chart-title">🥧 训练计划进度</div>
+            <div class="chart-wrapper" ref="planChartRef"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 消息列表 -->
-    <div class="messages">
+    <div class="messages" ref="messagesRef">
       <div
         v-for="msg in messages"
         :key="msg.id"
@@ -558,7 +585,7 @@ function askQuestion(question: string) {
       </div>
     </div>
 
-    <!-- 输入框 -->
+    <!-- 固定底部输入框 -->
     <div class="input-area">
       <!-- 图片上传按钮（暂时屏蔽）
       <div class="image-upload">
@@ -610,25 +637,48 @@ function askQuestion(question: string) {
 .app-container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 16px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
+/* 固定头部 */
 .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 12px 16px;
+  background: white;
   border-bottom: 1px solid #eee;
-  margin-bottom: 16px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .header h1 {
   font-size: 18px;
   margin: 0;
   color: #333;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.data-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
 }
 
 .clear-btn {
@@ -645,10 +695,78 @@ function askQuestion(question: string) {
   background: #eee;
 }
 
+/* 侧边抽屉 */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.drawer {
+  width: 85%;
+  max-width: 400px;
+  height: 100%;
+  background: white;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.drawer-header h2 {
+  font-size: 16px;
+  margin: 0;
+  color: #333;
+}
+
+.drawer-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
 /* 统计卡片 */
 .stats-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -656,28 +774,40 @@ function askQuestion(question: string) {
 .stat-card {
   background: linear-gradient(135deg, #4CAF50, #81C784);
   color: white;
-  padding: 12px;
+  padding: 16px;
   border-radius: 12px;
   text-align: center;
 }
 
 .stat-value {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: bold;
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 12px;
   opacity: 0.9;
   margin-top: 4px;
 }
 
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
+}
+
 /* 图表 */
 .charts-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+  margin-top: 16px;
 }
 
 .chart-wrapper {
@@ -687,12 +817,11 @@ function askQuestion(question: string) {
   padding: 8px;
 }
 
-/* 消息 */
+/* 消息区域 */
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
-  margin-bottom: 16px;
+  padding: 70px 16px 80px;
 }
 
 .message {
@@ -857,13 +986,21 @@ function askQuestion(question: string) {
   border-color: #4CAF50;
 }
 
-/* 输入区域 */
+/* 固定底部输入区域 */
 .input-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 12px 0;
+  padding: 12px 16px;
+  background: white;
   border-top: 1px solid #eee;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .input-area textarea {
