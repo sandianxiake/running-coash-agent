@@ -100,6 +100,9 @@ watch(showDataPanel, async (newVal) => {
     await nextTick()
     // 延迟一点确保 DOM 已渲染
     setTimeout(() => {
+      // 先加载最新数据
+      loadUserData()
+      // 初始化图表
       initCharts()
       // 触发图表 resize
       if (weeklyChart) weeklyChart.resize()
@@ -575,6 +578,24 @@ function updateRadarChart() {
 // 刷新数据
 function refreshData() {
   loadUserData()
+  
+  // 如果抽屉打开但图表未初始化，先初始化图表
+  if (showDataPanel.value) {
+    if (!weeklyChart && weeklyChartRef.value) {
+      weeklyChart = echarts.init(weeklyChartRef.value)
+    }
+    if (!paceChart && paceChartRef.value) {
+      paceChart = echarts.init(paceChartRef.value)
+    }
+    if (!planChart && planChartRef.value) {
+      planChart = echarts.init(planChartRef.value)
+    }
+    if (!radarChart && radarChartRef.value) {
+      radarChart = echarts.init(radarChartRef.value)
+    }
+  }
+  
+  // 更新图表数据
   updateWeeklyChart()
   updatePaceChart()
   updatePlanChart()
