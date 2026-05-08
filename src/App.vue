@@ -578,13 +578,7 @@ function updateRadarChart() {
       padding: [10, 15],
       textStyle: { color: '#333', fontSize: 12 },
       formatter: (params: any) => {
-        // 第一个 series(0) 不显示 tooltip，从 1 开始对应 metricsData
-        const idx = params.seriesIndex - 1
-        if (idx >= 0 && idx < metricsData.length) {
-          const m = metricsData[idx]
-          return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
-                  <div>${m.format(m.value)}</div>`
-        }
+        console.log('params:', params)
         return ''
       }
     },
