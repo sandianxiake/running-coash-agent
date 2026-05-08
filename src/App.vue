@@ -153,7 +153,7 @@ function loadUserData() {
     stats.value = {
       totalRuns: records.length,
       totalDistance: Math.round(totalDistance * 10) / 10,
-      avgPace: `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}`,
+      avgPace: `${Math.floor(avgPace)}′${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}″`,
       avgHeartRate: avgHeartRate
     }
   }
@@ -347,7 +347,7 @@ function updatePaceChart() {
         const data = params[0]
         const paceMin = Math.floor(data.value)
         const paceSec = Math.round((data.value - paceMin) * 60)
-        return `第${data.dataIndex + 1}次: ${paceMin}:${String(paceSec).padStart(2, '0')}/km`
+        return `第${data.dataIndex + 1}次: ${paceMin}′${String(paceSec).padStart(2, '0')}″/km`
       }
     },
     xAxis: {
@@ -362,7 +362,7 @@ function updatePaceChart() {
         formatter: (value: number) => {
           const min = Math.floor(value)
           const sec = Math.round((value - min) * 60)
-          return `${min}:${String(sec).padStart(2, '0')}`
+          return `${min}′${String(sec).padStart(2, '0')}″`
         }
       }
     },
@@ -538,7 +538,7 @@ function updateRadarChart() {
   const metricsData = [
     { label: '总时长', value: totalDuration, format: (v: number) => formatDurationHMS(v) },
     { label: '总距离', value: totalDistance, format: (v: number) => `${Number(v).toFixed(2)}km` },
-    { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}/km` : '-' },
+    { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}′${String(Math.round((v % 1) * 60)).padStart(2, '0')}″/km` : '-' },
     { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
     { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Math.round(v)}cm` : '-' },
     { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Math.round(v)}spm` : '-' },
