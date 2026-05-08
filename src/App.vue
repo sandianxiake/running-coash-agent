@@ -29,7 +29,7 @@ const stats = ref({
   totalRuns: 0,
   totalDistance: 0,
   avgPace: '--:--',
-  currentStreak: 0
+  avgHeartRate: '-'
 })
 
 // 当前流式消息
@@ -144,42 +144,19 @@ function loadUserData() {
     const totalDuration = records.reduce((sum, r) => sum + r.duration, 0)
     const avgPace = totalDuration / totalDistance
     
+    // 计算平均心率
+    const recordsWithHR = records.filter(r => r.avgHeartRate && r.avgHeartRate > 0)
+    const avgHeartRate = recordsWithHR.length > 0
+      ? Math.round(recordsWithHR.reduce((sum, r) => sum + (r.avgHeartRate || 0), 0) / recordsWithHR.length)
+      : '-'
+    
     stats.value = {
       totalRuns: records.length,
       totalDistance: Math.round(totalDistance * 10) / 10,
       avgPace: `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}`,
-      currentStreak: calculateStreak(records, getRunningDate)
+      avgHeartRate: avgHeartRate
     }
   }
-}
-
-// 计算连续跑步天数
-function calculateStreak(records: any[], getRunningDate: (r: any) => string): number {
-  if (records.length === 0) return 0
-  
-  const sortedRecords = [...records].sort((a, b) => 
-    new Date(getRunningDate(b)).getTime() - new Date(getRunningDate(a)).getTime()
-  )
-  
-  let streak = 0
-  let currentDate = new Date()
-  currentDate.setHours(0, 0, 0, 0)
-  
-  for (const record of sortedRecords) {
-    const recordDate = new Date(getRunningDate(record))
-    recordDate.setHours(0, 0, 0, 0)
-    
-    const diffDays = Math.floor((currentDate.getTime() - recordDate.getTime()) / (24 * 60 * 60 * 1000))
-    
-    if (diffDays <= 1) {
-      streak++
-      currentDate = recordDate
-    } else {
-      break
-    }
-  }
-  
-  return streak
 }
 
 // 初始化图表
@@ -823,8 +800,8 @@ function askQuestion(question: string) {
               <div class="stat-label">平均配速</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">{{ stats.currentStreak }}</div>
-              <div class="stat-label">连续天数</div>
+              <div class="stat-value">{{ stats.avgHeartRate }}</div>
+              <div class="stat-label">平均心率</div>
             </div>
           </div>
 
