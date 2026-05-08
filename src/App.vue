@@ -571,26 +571,20 @@ function updateRadarChart() {
   radarChart.setOption({
     tooltip: {
       show: true,
-      trigger: 'axis',
+      trigger: 'item',
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#4CAF50',
       borderWidth: 1,
       padding: [10, 15],
       textStyle: { color: '#333', fontSize: 12 },
-      formatter: (params) => {
-        // params 是数组，遍历所有维度显示
-        if (!params || params.length === 0) return ''
-        
+      formatter: () => {
+        // 显示所有7个维度的数据
         let html = '<div style="min-width:130px">'
-        params.forEach((p, index) => {
-          // 通过 index 从 metricsData 获取对应维度的数据
-          if (index >= 0 && index < metricsData.length) {
-            const m = metricsData[index]
-            html += `<div style="margin:4px 0">
-                      <span style="color:#4CAF50;font-weight:bold">${m.label}:</span> 
-                      ${m.format(m.value)}
-                     </div>`
-          }
+        metricsData.forEach((m) => {
+          html += `<div style="margin:4px 0">
+                    <span style="color:#4CAF50;font-weight:bold">${m.label}:</span> 
+                    ${m.format(m.value)}
+                   </div>`
         })
         html += '</div>'
         return html
@@ -622,43 +616,21 @@ function updateRadarChart() {
         }
       }
     },
-    series: [
-      // 第一个 series 显示实际的多边形
-      {
-        type: 'radar',
-        data: [{
-          value: radarData,
-          name: '能力值',
-          lineStyle: { color: '#4CAF50', width: 2 },
-          areaStyle: { color: 'rgba(76, 175, 80, 0.4)' },
-          itemStyle: { color: '#4CAF50' },
-          symbol: 'circle',
-          symbolSize: 6
-        }],
-        tooltip: {
-          show: false
-        }
-      },
-      // 7 个透明的 series 用于触发 tooltip
-      ...metricsData.map((m, i) => ({
-        type: 'radar' as const,
-        data: [{
-          value: radarData,
-          name: m.label
-        }],
-        symbol: 'circle',
-        symbolSize: 8,
+    series: [{
+      type: 'radar',
+      data: [{
+        value: radarData,
+        name: '能力值',
+        // 保存原始数据用于 tooltip
+        original: metricsData,
         lineStyle: { color: '#4CAF50', width: 2 },
-        areaStyle: { color: 'transparent' },
-        itemStyle: { 
-          color: 'transparent',
-          borderColor: 'transparent',
-          borderWidth: 0
-        },
-        silent: false
-      }))
-    ]
-  }, true)
+        areaStyle: { color: 'rgba(76, 175, 80, 0.4)' },
+        itemStyle: { color: '#4CAF50' },
+        symbol: 'circle',
+        symbolSize: 6
+      }]
+    }]
+  })
 }
 
 // 刷新数据
