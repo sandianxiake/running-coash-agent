@@ -571,21 +571,29 @@ function updateRadarChart() {
   radarChart.setOption({
     tooltip: {
       show: true,
-      trigger: 'item',
+      trigger: 'axis',
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#4CAF50',
       borderWidth: 1,
       padding: [10, 15],
       textStyle: { color: '#333', fontSize: 12 },
-      formatter: (params: any) => {
-        if (!params || !params.name) return ''
-        const idx = metricsData.findIndex(m => m.label === params.name)
-        if (idx >= 0) {
-          const m = metricsData[idx]
-          return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
-                  <div>${m.format(m.value)}</div>`
-        }
-        return ''
+      formatter: (params) => {
+        // params 是数组，遍历所有维度显示
+        if (!params || params.length === 0) return ''
+        
+        let html = '<div style="min-width:130px">'
+        params.forEach((p, index) => {
+          // 通过 index 从 metricsData 获取对应维度的数据
+          if (index >= 0 && index < metricsData.length) {
+            const m = metricsData[index]
+            html += `<div style="margin:4px 0">
+                      <span style="color:#4CAF50;font-weight:bold">${m.label}:</span> 
+                      ${m.format(m.value)}
+                     </div>`
+          }
+        })
+        html += '</div>'
+        return html
       }
     },
     radar: {
