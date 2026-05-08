@@ -540,7 +540,7 @@ function updateRadarChart() {
     { label: '总距离', value: totalDistance, format: (v: number) => `${Number(v).toFixed(2)}km` },
     { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}/km` : '-' },
     { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
-    { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Math.round(v * 100)}cm` : '-' },
+    { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Math.round(v)}cm` : '-' },
     { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Math.round(v)}spm` : '-' },
     { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Math.round(v)}ml/kg/min` : '-' }
   ]
