@@ -559,7 +559,7 @@ function updateRadarChart() {
   }
   
   const metricsData = [
-    { label: '总时间', value: totalDuration, format: (v: number) => formatDurationHMS(v) },
+    { label: '总时长', value: totalDuration, format: (v: number) => formatDurationHMS(v) },
     { label: '总距离', value: totalDistance, format: (v: number) => `${Number(v).toFixed(2)}km` },
     { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}/km` : '-' },
     { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
@@ -592,7 +592,7 @@ function updateRadarChart() {
     },
     radar: {
       indicator: [
-        { name: '总时间', max: 100 },
+        { name: '总时长', max: 100 },
         { name: '总距离', max: 100 },
         { name: '配速', max: 100 },
         { name: '心率', max: 100 },
@@ -600,6 +600,7 @@ function updateRadarChart() {
         { name: '步频', max: 100 },
         { name: '摄氧量', max: 100 }
       ],
+      center: ['50%', '55%'],
       shape: 'polygon',
       splitNumber: 4,
       axisName: {
