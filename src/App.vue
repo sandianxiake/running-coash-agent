@@ -520,13 +520,13 @@ function updateRadarChart() {
   ]
   
   // 准备各维度的原始数据（用于 tooltip）
-  // 格式化时长为 hh:mm:ss
+  // 格式化时长为 x时x分x秒
   const formatDurationHMS = (minutes: number) => {
     const totalSeconds = Math.round(minutes * 60)
     const hours = Math.floor(totalSeconds / 3600)
     const mins = Math.floor((totalSeconds % 3600) / 60)
     const secs = totalSeconds % 60
-    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+    return `${hours}时${mins}分${secs}秒`
   }
   
   const metricsData = [

@@ -109,7 +109,7 @@ export const addRecordTool: Tool = {
       const hours = Math.floor(totalSeconds / 3600)
       const mins = Math.floor((totalSeconds % 3600) / 60)
       const secs = totalSeconds % 60
-      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+      return `${hours}时${mins}分${secs}秒`
     }
     
     return {
