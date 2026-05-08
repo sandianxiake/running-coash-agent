@@ -88,10 +88,6 @@ onMounted(async () => {
     })
   }
 
-  // 滚动到最新消息
-  await nextTick()
-  scrollToBottom()
-
   // 加载用户数据
   loadUserData()
   
@@ -112,6 +108,10 @@ onMounted(async () => {
   // 初始化图表
   await nextTick()
   initCharts()
+  
+  // 滚动到最新消息（延迟确保 DOM 渲染完成）
+  await nextTick()
+  scrollToBottom()
 })
 
 // 监听抽屉打开，重新渲染图表
