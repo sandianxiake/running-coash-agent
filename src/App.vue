@@ -578,8 +578,8 @@ function updateRadarChart() {
       padding: [10, 15],
       textStyle: { color: '#333', fontSize: 12 },
       formatter: (params: any) => {
-        // 每个 series 对应一个维度
-        const idx = params.seriesIndex
+        // 第一个 series(0) 不显示 tooltip，从 1 开始对应 metricsData
+        const idx = params.seriesIndex - 1
         if (idx >= 0 && idx < metricsData.length) {
           const m = metricsData[idx]
           return `<div style="font-weight:bold;color:#4CAF50">${m.label}</div>
@@ -614,18 +614,42 @@ function updateRadarChart() {
         }
       }
     },
-    series: metricsData.map((m, i) => ({
-      type: 'radar',
-      data: [{
-        value: radarData,
-        name: m.label
-      }],
-      symbol: 'circle',
-      symbolSize: 6,
-      lineStyle: { color: 'transparent', width: 0 },
-      areaStyle: { color: 'transparent' },
-      itemStyle: { color: 'transparent' }
-    }))
+    series: [
+      // 第一个 series 显示实际的多边形
+      {
+        type: 'radar',
+        data: [{
+          value: radarData,
+          name: '能力值',
+          lineStyle: { color: '#4CAF50', width: 2 },
+          areaStyle: { color: 'rgba(76, 175, 80, 0.4)' },
+          itemStyle: { color: '#4CAF50' },
+          symbol: 'circle',
+          symbolSize: 6
+        }],
+        tooltip: {
+          show: false
+        }
+      },
+      // 7 个透明的 series 用于触发 tooltip
+      ...metricsData.map((m, i) => ({
+        type: 'radar' as const,
+        data: [{
+          value: radarData,
+          name: m.label
+        }],
+        symbol: 'circle',
+        symbolSize: 8,
+        lineStyle: { color: '#4CAF50', width: 2 },
+        areaStyle: { color: 'transparent' },
+        itemStyle: { 
+          color: 'transparent',
+          borderColor: 'transparent',
+          borderWidth: 0
+        },
+        silent: false
+      }))
+    ]
   }, true)
 }
 
