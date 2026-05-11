@@ -85,6 +85,9 @@ function startVoiceInput() {
     recognition.interimResults = true
     recognition.maxAlternatives = 1
     
+    // 添加 eventHandlers 属性（某些浏览器需要）
+    const eventHandlerMap: Record<string, any> = {}
+    
     // 事件处理
     recognition.onstart = () => {
       isRecording.value = true
@@ -108,18 +111,20 @@ function startVoiceInput() {
       
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
-        console.log('  第', i, '条:', result[0].transcript, '- 置信度:', result[0].confidence)
+        const transcript = result[0].transcript
+        const confidence = result[0].confidence
+        
+        console.log('  识别文字:', transcript, '置信度:', confidence.toFixed(2))
         
         if (result.isFinal) {
-          // 追加最终结果到输入框
-          inputText.value += result[0].transcript
-          console.log('追加识别结果:', result[0].transcript)
+          inputText.value += transcript
+          console.log('✓ 追加识别结果:', transcript)
         }
       }
     }
     
-    recognition.onnomatch = () => {
-      console.log('✗ 未匹配到结果')
+    recognition.onnomatch = (event: any) => {
+      console.log('✗ 未匹配到结果:', event.results)
     }
     
     recognition.onerror = (event: any) => {
@@ -129,12 +134,13 @@ function startVoiceInput() {
       const errorMessages: Record<string, string> = {
         'not-allowed': '请允许使用麦克风',
         'no-speech': '未检测到语音，请对着麦克风说话',
-        'network': '网络错误，请检查网络',
+        'network': '⚠️ 网络错误，可能是 Google 服务被限制\n\n建议：\n• 使用 VPN\n• 或在 localhost 环境测试',
         'audio-capture': '无法获取音频设备',
         'aborted': '识别被中断'
       }
       
-      alert(errorMessages[event.error] || `识别错误: ${event.error}`)
+      const msg = errorMessages[event.error] || `识别错误: ${event.error}`
+      alert(msg)
     }
     
     recognition.onend = () => {
