@@ -81,7 +81,7 @@ function startVoiceInput() {
     
     // 配置
     recognition.lang = 'zh-CN'
-    recognition.continuous = false
+    recognition.continuous = true
     recognition.interimResults = true
     recognition.maxAlternatives = 1
     
@@ -111,7 +111,9 @@ function startVoiceInput() {
         console.log('  第', i, '条:', result[0].transcript, '- 置信度:', result[0].confidence)
         
         if (result.isFinal) {
-          inputText.value = result[0].transcript
+          // 追加最终结果到输入框
+          inputText.value += result[0].transcript
+          console.log('追加识别结果:', result[0].transcript)
         }
       }
     }
