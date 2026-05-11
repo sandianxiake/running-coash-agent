@@ -58,7 +58,7 @@ function scrollToBottom() {
     if (messagesRef.value) {
       const messages = messagesRef.value.querySelectorAll('.message')
       if (messages.length > 0) {
-        messages[messages.length - 1].scrollIntoView({ behavior: 'direct', block: 'start' })
+        messages[messages.length - 1].scrollIntoView({ behavior: 'instant', block: 'start' })
       } else {
         messagesRef.value.scrollTop = messagesRef.value.scrollHeight
       }
