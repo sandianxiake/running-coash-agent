@@ -1,5 +1,5 @@
 /**
- * 讯飞语音识别 WebAPI
+ * 讯飞语音识别 WebAPI（语音听写流式版）
  * 使用 WebSocket 实时语音转写
  */
 
@@ -8,7 +8,8 @@ import CryptoJS from 'crypto-js'
 // 讯飞配置
 const XF_APPID = 'c2fb7a0e'
 const XF_API_SECRET = 'OWZhYTBlMmFhOGRlNGU5NDkyMmQ1ODg4'
-const XF_URL = 'wss://rtasr.xfyun.cn/v1/ws'
+const XF_API_KEY = '9c7b4703bab81c43e356b890bb60f555'
+const XF_URL = 'wss://ws-api.xfyun.cn/v2/iat'
 
 export class XFVoiceRecognition {
   private ws: WebSocket | null = null
@@ -18,10 +19,10 @@ export class XFVoiceRecognition {
   private onStatusChange: ((status: string) => void) | null = null
   private isConnected = false
   private isRecording = false
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = 3
   private stream: MediaStream | null = null
-  private audioChunks: Blob[] = []
+  private audioContext: AudioContext | null = null
+  private analyser: AnalyserNode | null = null
+  private animationId: number | null = null
   
   constructor(options: {
     onResult?: (text: string) => void
@@ -34,24 +35,58 @@ export class XFVoiceRecognition {
   }
   
   /**
-   * 生成讯飞签名
-   * 公式: Base64(HMAC-SHA1(MD5(APPID + curTime), APISecret))
+   * 生成 RFC1123 格式的时间戳
    */
-  private generateSignature(ts: number): string {
-    const strToHash = XF_APPID + ts
-    const md5Result = CryptoJS.MD5(strToHash).toString()
-    const hmacResult = CryptoJS.HmacSHA1(md5Result, XF_API_SECRET)
-    return hmacResult.toString(CryptoJS.enc.Base64)
+  private formatRFC1123Date(): string {
+    const now = new Date()
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    const day = days[now.getUTCDay()]
+    const date = String(now.getUTCDate()).padStart(2, '0')
+    const month = months[now.getUTCMonth()]
+    const year = now.getUTCFullYear()
+    const hours = String(now.getUTCHours()).padStart(2, '0')
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0')
+    const seconds = String(now.getUTCSeconds()).padStart(2, '0')
+    
+    return `${day}, ${date} ${month} ${year} ${hours}:${minutes}:${seconds} GMT`
+  }
+  
+  /**
+   * 生成讯飞签名（语音听写专用）
+   * 使用 HMAC-SHA256
+   */
+  private generateAuthorization(): { authorization: string; date: string } {
+    const date = this.formatRFC1123Date()
+    
+    // 签名内容
+    const signatureOrigin = `host: ws-api.xfyun.cn\ndate: ${date}\nGET /v2/iat HTTP/1.1`
+    
+    // HMAC-SHA256 加密
+    const signatureSha = CryptoJS.HmacSHA256(signatureOrigin, XF_API_SECRET)
+    const signatureBase64 = signatureSha.toString(CryptoJS.enc.Base64)
+    
+    // Authorization header
+    const authorizationOrigin = `api_key="${XF_API_KEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signatureBase64}"`
+    const authorization = btoa(authorizationOrigin)
+    
+    return { authorization, date }
   }
   
   /**
    * 生成 WebSocket URL
    */
   private generateUrl(): string {
-    const ts = Math.floor(Date.now() / 1000)
-    const signa = this.generateSignature(ts)
+    const { authorization, date } = this.generateAuthorization()
     
-    return `${XF_URL}?appid=${XF_APPID}&ts=${ts}&signa=${signa}&engine_type=sms16k&lang=zh-CN`
+    const params = new URLSearchParams({
+      authorization,
+      date,
+      host: 'ws-api.xfyun.cn'
+    })
+    
+    return `${XF_URL}?${params.toString()}`
   }
   
   /**
@@ -71,21 +106,20 @@ export class XFVoiceRecognition {
         } 
       })
       
+      // 创建音频分析器用于音量显示
+      this.audioContext = new AudioContext({ sampleRate: 16000 })
+      const source = this.audioContext.createMediaStreamSource(this.stream)
+      this.analyser = this.audioContext.createAnalyser()
+      this.analyser.fftSize = 256
+      source.connect(this.analyser)
+      
       // 创建 MediaRecorder
       this.mediaRecorder = new MediaRecorder(this.stream, {
         mimeType: 'audio/webm;codecs=opus'
       })
       
-      this.audioChunks = []
-      
       this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data)
-        }
-      }
-      
-      this.mediaRecorder.onstop = () => {
-        this.sendAudio()
+        // 音频数据处理
       }
       
       // 开始录音
@@ -116,7 +150,6 @@ export class XFVoiceRecognition {
         console.log('讯飞 WebSocket 已连接')
         this.isConnected = true
         this.onStatusChange?.('connected')
-        this.reconnectAttempts = 0
       }
       
       this.ws.onmessage = (event) => {
@@ -132,14 +165,6 @@ export class XFVoiceRecognition {
         console.log('WebSocket 已关闭:', event.code, event.reason)
         this.isConnected = false
         this.onStatusChange?.('disconnected')
-        
-        // 如果是异常断开，尝试重连
-        if (event.code !== 1000 && this.isRecording && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++
-          console.log(`尝试重连... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
-          this.onStatusChange?.('reconnecting')
-          setTimeout(() => this.connect(), 1000)
-        }
       }
       
     } catch (error: any) {
@@ -168,7 +193,9 @@ export class XFVoiceRecognition {
         const words = json.data.result.ws || []
         let text = ''
         for (const word of words) {
-          text += word.cw[0].w
+          for (const w of word.cw) {
+            text += w.w
+          }
         }
         
         if (text) {
@@ -176,34 +203,62 @@ export class XFVoiceRecognition {
         }
       }
       
+      // 检查是否是最后一帧
+      if (json.data && json.data.status === 2) {
+        console.log('识别完成')
+        this.onStatusChange?.('completed')
+      }
+      
     } catch (error) {
-      // 不是 JSON，可能是二进制音频数据
+      // 不是 JSON
     }
   }
   
   /**
    * 发送音频数据
    */
-  private async sendAudio(): Promise<void> {
-    if (this.audioChunks.length === 0) return
-    
-    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' })
-    const arrayBuffer = await audioBlob.arrayBuffer()
+  private sendAudioData(data: ArrayBuffer): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
     
     // 转换为 Base64
-    const base64 = this.arrayBufferToBase64(arrayBuffer)
+    const base64 = this.arrayBufferToBase64(data)
     
-    if (this.ws && this.isConnected) {
-      // 发送结束指令
-      const endCommand = {
-        data: {
-          status: 2,
-          data: base64
-        }
+    const frameData = {
+      data: {
+        status: 1, // 中间帧
+        format: 'audio/L16;rate=16000',
+        encoding: 'raw',
+        audio: base64
       }
-      
-      this.ws.send(JSON.stringify(endCommand))
     }
+    
+    this.ws.send(JSON.stringify(frameData))
+  }
+  
+  /**
+   * 发送结束帧
+   */
+  private sendEndFrame(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
+    
+    const endData = {
+      common: { app_id: XF_APPID },
+      business: {
+        domain: 'iat',
+        language: 'zh_cn',
+        accent: 'mandarin',
+        vinfo: 1,
+        vad_eos: 10000
+      },
+      data: {
+        status: 2, // 最后一帧
+        format: 'audio/L16;rate=16000',
+        encoding: 'raw',
+        audio: ''
+      }
+    }
+    
+    this.ws.send(JSON.stringify(endData))
   }
   
   /**
@@ -230,6 +285,16 @@ export class XFVoiceRecognition {
         this.stream.getTracks().forEach(track => track.stop())
         this.stream = null
       }
+      
+      if (this.audioContext) {
+        this.audioContext.close()
+        this.audioContext = null
+      }
+      
+      if (this.animationId) {
+        cancelAnimationFrame(this.animationId)
+        this.animationId = null
+      }
     }
     
     if (this.ws) {
@@ -244,6 +309,19 @@ export class XFVoiceRecognition {
    * 获取音频分析数据
    */
   getAudioLevel(): number {
-    return 0
+    if (!this.analyser) return 0
+    
+    const dataArray = new Uint8Array(this.analyser.frequencyBinCount)
+    this.analyser.getByteFrequencyData(dataArray)
+    
+    // 计算平均音量
+    let sum = 0
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i]
+    }
+    const average = sum / dataArray.length
+    
+    // 归一化到 0-1
+    return Math.min(1, average / 128)
   }
 }
