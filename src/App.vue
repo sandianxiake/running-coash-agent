@@ -38,6 +38,10 @@ const streamingMessageId = ref<string | null>(null)
 // 快捷问题（由 AI 动态生成）
 const quickQuestions = ref<string[]>([])
 
+// 语音识别状态
+const isRecording = ref(false)
+const voiceRecognition = ref<any>(null)
+
 // 数据面板显示状态
 const showDataPanel = ref(false)
 
@@ -51,6 +55,69 @@ const periodType = ref<'week' | 'month' | 'year'>('week')
 const periodLabel = computed(() => {
   return periodType.value === 'week' ? '周' : periodType.value === 'month' ? '月' : '年'
 })
+
+// 语音录入
+function startVoiceInput() {
+  // 检查浏览器支持
+  const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
+  if (!SpeechRecognition) {
+    alert('您的浏览器不支持语音识别，请使用 Chrome 或 Edge 浏览器')
+    return
+  }
+  
+  // 如果正在录音，则停止
+  if (isRecording.value) {
+    if (voiceRecognition.value) {
+      voiceRecognition.value.stop()
+    }
+    isRecording.value = false
+    return
+  }
+  
+  // 创建语音识别实例
+  const recognition = new SpeechRecognition()
+  recognition.lang = 'zh-CN'
+  recognition.continuous = true
+  recognition.interimResults = true
+  
+  recognition.onstart = () => {
+    isRecording.value = true
+  }
+  
+  recognition.onresult = (event: any) => {
+    let finalTranscript = ''
+    let interimTranscript = ''
+    
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript
+      } else {
+        interimTranscript += transcript
+      }
+    }
+    
+    // 如果有最终结果，追加到输入框
+    if (finalTranscript) {
+      inputText.value += finalTranscript
+    }
+  }
+  
+  recognition.onerror = (event: any) => {
+    console.error('语音识别错误:', event.error)
+    isRecording.value = false
+    if (event.error === 'not-allowed') {
+      alert('请允许使用麦克风')
+    }
+  }
+  
+  recognition.onend = () => {
+    isRecording.value = false
+  }
+  
+  voiceRecognition.value = recognition
+  recognition.start()
+}
 
 // 滚动到底部
 function scrollToBottom() {
@@ -900,6 +967,17 @@ function askQuestion(question: string) {
       </div>
       -->
       
+      <!-- 语音录入按钮 -->
+      <button 
+        @click="startVoiceInput" 
+        class="voice-btn"
+        :class="{ recording: isRecording }"
+        :disabled="isLoading"
+        :title="isRecording ? '停止录音' : '语音录入'"
+      >
+        {{ isRecording ? '🔴' : '🎤' }}
+      </button>
+      
       <textarea
         v-model="inputText"
         placeholder="输入你的问题..."
@@ -1354,6 +1432,42 @@ function askQuestion(question: string) {
 
 .input-area textarea:focus {
   border-color: #4CAF50;
+}
+
+/* 语音按钮 */
+.voice-btn {
+  width: 44px;
+  height: 44px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.voice-btn:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+
+.voice-btn.recording {
+  background: #ffebee;
+  border-color: #f44336;
+  animation: pulse 1s infinite;
+}
+
+.voice-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 .send-btn {
