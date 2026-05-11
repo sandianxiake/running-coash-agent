@@ -78,60 +78,75 @@ function startVoiceInput() {
   // 创建语音识别实例
   try {
     const recognition = new SpeechRecognition()
+    
+    // 配置
     recognition.lang = 'zh-CN'
     recognition.continuous = false
     recognition.interimResults = true
+    recognition.maxAlternatives = 1
     
+    // 事件处理
     recognition.onstart = () => {
       isRecording.value = true
-      console.log('语音识别已启动')
+      console.log('✓ 语音识别已启动')
+    }
+    
+    recognition.onaudiostart = () => {
+      console.log('✓ 音频已启动')
+    }
+    
+    recognition.onsoundstart = () => {
+      console.log('✓ 检测到声音')
+    }
+    
+    recognition.onspeechstart = () => {
+      console.log('✓ 检测到语音')
     }
     
     recognition.onresult = (event: any) => {
-      console.log('识别事件:', event.results)
+      console.log('✓ 收到识别结果:', event.results)
       
-      let finalTranscript = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript
-        } else {
-          // 实时显示中间结果
-          inputText.value = transcript
+        const result = event.results[i]
+        console.log('  第', i, '条:', result[0].transcript, '- 置信度:', result[0].confidence)
+        
+        if (result.isFinal) {
+          inputText.value = result[0].transcript
         }
-      }
-      
-      // 最终结果
-      if (finalTranscript) {
-        inputText.value = finalTranscript
-        console.log('最终识别结果:', finalTranscript)
       }
     }
     
-    recognition.onspeechend = () => {
-      console.log('说话结束')
-      recognition.stop()
+    recognition.onnomatch = () => {
+      console.log('✗ 未匹配到结果')
     }
     
     recognition.onerror = (event: any) => {
-      console.error('语音识别错误:', event.error)
+      console.error('✗ 语音识别错误:', event.error)
       isRecording.value = false
-      if (event.error === 'not-allowed') {
-        alert('请允许使用麦克风\n\n在浏览器地址栏左侧点击"允许"按钮')
-      } else if (event.error === 'no-speech') {
-        alert('未检测到语音，请重试')
-      } else if (event.error === 'network') {
-        alert('网络错误，请检查网络连接')
+      
+      const errorMessages: Record<string, string> = {
+        'not-allowed': '请允许使用麦克风',
+        'no-speech': '未检测到语音，请对着麦克风说话',
+        'network': '网络错误，请检查网络',
+        'audio-capture': '无法获取音频设备',
+        'aborted': '识别被中断'
       }
+      
+      alert(errorMessages[event.error] || `识别错误: ${event.error}`)
     }
     
     recognition.onend = () => {
       isRecording.value = false
-      console.log('语音识别已停止')
+      console.log('✓ 语音识别已结束')
     }
     
+    // 保存引用
     voiceRecognition.value = recognition
+    
+    console.log('开始启动语音识别...')
     recognition.start()
+    console.log('已调用 start()')
+    
   } catch (e) {
     console.error('创建语音识别失败:', e)
     alert('语音识别启动失败，请刷新页面重试')
