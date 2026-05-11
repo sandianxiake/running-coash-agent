@@ -54,9 +54,16 @@ const periodLabel = computed(() => {
 
 // 滚动到底部
 function scrollToBottom() {
-  if (messagesRef.value) {
-    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
-  }
+  setTimeout(() => {
+    if (messagesRef.value) {
+      const messages = messagesRef.value.querySelectorAll('.message')
+      if (messages.length > 0) {
+        messages[messages.length - 1].scrollIntoView({ behavior: 'instant', block: 'start' })
+      } else {
+        messagesRef.value.scrollTop = messagesRef.value.scrollHeight
+      }
+    }
+  }, 1500)
 }
 
 // 切换周期
