@@ -58,12 +58,12 @@ function scrollToBottom() {
     if (messagesRef.value) {
       const messages = messagesRef.value.querySelectorAll('.message')
       if (messages.length > 0) {
-        messages[messages.length - 1].scrollIntoView({ behavior: 'smooth', block: 'start' })
+        messages[messages.length - 1].scrollIntoView({ behavior: 'direct', block: 'start' })
       } else {
         messagesRef.value.scrollTop = messagesRef.value.scrollHeight
       }
     }
-  }, 600)
+  }, 400)
 }
 
 // 切换周期
