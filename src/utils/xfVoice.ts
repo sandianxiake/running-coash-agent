@@ -11,16 +11,6 @@ const XF_API_SECRET = 'OWZhYTBlMmFhOGRlNGU5NDkyMmQ1ODg4'
 const XF_URL = 'wss://rtasr.xfyun.cn/v1/ws'
 
 /**
- * 生成讯飞 API 签名
- */
-function generateSignature(apiSecret: string, curTime: string, param: string): string {
-  const str = apiSecret + curTime + param
-  // 使用 Web Crypto API 计算 SHA1
-  // 这里用简单方式，讯飞也接受 MD5
-  return md5(str)
-}
-
-/**
  * 简单的 MD5 实现
  */
 function md5(string: string): string {
@@ -34,30 +24,18 @@ function md5(string: string): string {
     const x8 = x & 0x40000000
     const y8 = y & 0x40000000
     const result = (x & 0x3FFFFFFF) + (y & 0x3FFFFFFF)
-    if (x8 & y8) {
-      return result ^ 0x80000000 ^ x4 ^ y4
-    }
+    if (x8 & y8) return result ^ 0x80000000 ^ x4 ^ y4
     if (x8 | y8) {
-      if (result & 0x40000000) {
-        return result ^ 0xC0000000 ^ x4 ^ y4
-      }
+      if (result & 0x40000000) return result ^ 0xC0000000 ^ x4 ^ y4
       return result ^ 0x40000000 ^ x4 ^ y4
     }
     return result ^ x4 ^ y4
   }
   
-  function F(x: number, y: number, z: number): number {
-    return (x & y) | (~x & z)
-  }
-  function G(x: number, y: number, z: number): number {
-    return (x & z) | (y & ~z)
-  }
-  function H(x: number, y: number, z: number): number {
-    return x ^ y ^ z
-  }
-  function I(x: number, y: number, z: number): number {
-    return y ^ (x | ~z)
-  }
+  function F(x: number, y: number, z: number): number { return (x & y) | (~x & z) }
+  function G(x: number, y: number, z: number): number { return (x & z) | (y & ~z) }
+  function H(x: number, y: number, z: number): number { return x ^ y ^ z }
+  function I(x: number, y: number, z: number): number { return y ^ (x | ~z) }
   
   function FF(a: number, b: number, c: number, d: number, x: number, s: number, ac: number): number {
     a = addUnsigned(a, addUnsigned(addUnsigned(F(b, c, d), x), ac))
@@ -89,13 +67,10 @@ function md5(string: string): string {
     for (let i = 0; i < lMessageLength; i++) {
       const lBytePosition = (i % 4) * 8
       lWordArray[lWordCount >>> 2] |= str.charCodeAt(i) << lBytePosition
-      if (lBytePosition === 0 && i % 256 === 0) {
-        lWordArray[lWordCount >>> 2] = 0
-      }
       lWordCount++
     }
     
-    lWordArray[lCount >>> 2] |= 0x80 << (lCount % 4 * 8)
+    lWordArray[lWordCount >>> 2] |= 0x80 << (lWordCount % 4 * 8)
     lWordArray[lNumberOfWords2 - 2] = lMessageLength << 3
     lWordArray[lNumberOfWords2 - 1] = lMessageLength >>> 29
     return lWordArray
@@ -103,19 +78,14 @@ function md5(string: string): string {
   
   function wordToHex(value: number): string {
     let wordToHexValue = ''
-    let wordToHexValue2 = ''
     for (let j = 0; j <= 3; j++) {
-      wordToHexValue2 = (value >>> (j * 8)) & 255
+      const wordToHexValue2 = (value >>> (j * 8)) & 255
       const mostSignificant = wordToHexValue2.toString(16)
-      wordToHexValue = wordToHexValue + (mostSignificant.length === 2 ? mostSignificant : '0' + mostSignificant)
+      wordToHexValue += (mostSignificant.length === 2 ? mostSignificant : '0' + mostSignificant)
     }
     return wordToHexValue
   }
   
-  const x = new Array(16).fill(0)
-  x[14] = 0
-  x[15] = 0
-  let k = 0
   let a = 0x67452301
   let b = 0xEFCDAB89
   let c = 0x98BADCFE
@@ -123,13 +93,10 @@ function md5(string: string): string {
   
   const wordArray = convertToWordArray(string)
   const lMessageLength = wordArray.length
-  let AA, BB, CC, DD
   
   for (let k = 0; k < lMessageLength; k += 16) {
-    AA = a
-    BB = b
-    CC = c
-    DD = d
+    const AA = a, BB = b, CC = c, DD = d
+    
     a = FF(a, b, c, d, wordArray[k + 0], 7, 0xD76AA478)
     d = FF(d, a, b, c, wordArray[k + 1], 12, 0xE8C7B756)
     c = FF(c, d, a, b, wordArray[k + 2], 17, 0x242070DB)
@@ -146,6 +113,7 @@ function md5(string: string): string {
     d = FF(d, a, b, c, wordArray[k + 13], 12, 0xFD987193)
     c = FF(c, d, a, b, wordArray[k + 14], 17, 0xA679438E)
     b = FF(b, c, d, a, wordArray[k + 15], 22, 0x49B40821)
+    
     a = GG(a, b, c, d, wordArray[k + 1], 5, 0xF61E2562)
     d = GG(d, a, b, c, wordArray[k + 6], 9, 0xC040B340)
     c = GG(c, d, a, b, wordArray[k + 11], 14, 0x265E5A51)
@@ -162,6 +130,7 @@ function md5(string: string): string {
     d = GG(d, a, b, c, wordArray[k + 2], 9, 0xFCEFA3F8)
     c = GG(c, d, a, b, wordArray[k + 7], 14, 0x676F02D9)
     b = GG(b, c, d, a, wordArray[k + 12], 20, 0x8D2A4C8A)
+    
     a = HH(a, b, c, d, wordArray[k + 5], 4, 0xFFFA3942)
     d = HH(d, a, b, c, wordArray[k + 8], 11, 0x8771F681)
     c = HH(c, d, a, b, wordArray[k + 11], 16, 0x6D9D6122)
@@ -178,6 +147,7 @@ function md5(string: string): string {
     d = HH(d, a, b, c, wordArray[k + 12], 11, 0xE6DB99E5)
     c = HH(c, d, a, b, wordArray[k + 15], 16, 0x1FA27CF8)
     b = HH(b, c, d, a, wordArray[k + 2], 23, 0xC4AC5665)
+    
     a = II(a, b, c, d, wordArray[k + 0], 6, 0xF4292244)
     d = II(d, a, b, c, wordArray[k + 7], 10, 0x432AFF97)
     c = II(c, d, a, b, wordArray[k + 14], 15, 0xAB9423A7)
@@ -194,6 +164,7 @@ function md5(string: string): string {
     d = II(d, a, b, c, wordArray[k + 11], 10, 0xBD3AF235)
     c = II(c, d, a, b, wordArray[k + 2], 15, 0x2AD7D2BB)
     b = II(b, c, d, a, wordArray[k + 9], 21, 0xEB86D391)
+    
     a = addUnsigned(a, AA)
     b = addUnsigned(b, BB)
     c = addUnsigned(c, CC)
@@ -202,8 +173,6 @@ function md5(string: string): string {
   
   return (wordToHex(a) + wordToHex(b) + wordToHex(c) + wordToHex(d)).toLowerCase()
 }
-
-let lCount = 0
 
 export class XFVoiceRecognition {
   private ws: WebSocket | null = null
@@ -232,10 +201,10 @@ export class XFVoiceRecognition {
    */
   private generateUrl(): string {
     const curTime = Math.floor(Date.now() / 1000).toString()
-    const param = Buffer.from(JSON.stringify({
+    const param = btoa(JSON.stringify({
       engine_type: 'sms16k',
       aue: 'raw',
-    })).toString('base64')
+    }))
     
     const checkSum = md5(XF_API_KEY + curTime + param)
     
@@ -312,12 +281,13 @@ export class XFVoiceRecognition {
   private connect(): void {
     const url = this.generateUrl()
     console.log('连接讯飞 WebSocket...')
+    console.log('URL:', url)
     
     try {
       this.ws = new WebSocket(url)
       
       this.ws.onopen = () => {
-        console.log('✓ 讯飞 WebSocket 已连接')
+        console.log('讯飞 WebSocket 已连接')
         this.isConnected = true
         this.reconnectAttempts = 0
         this.onStatusChange?.('connected')
@@ -332,8 +302,8 @@ export class XFVoiceRecognition {
         this.onError?.('WebSocket 连接错误')
       }
       
-      this.ws.onclose = () => {
-        console.log('WebSocket 已关闭')
+      this.ws.onclose = (event) => {
+        console.log('WebSocket 已关闭:', event.code, event.reason)
         this.isConnected = false
         
         // 如果还在录音，尝试重连
@@ -411,7 +381,7 @@ export class XFVoiceRecognition {
   }
   
   /**
-   * ArrayBuffer 转 Base64
+   * ArrayBuffer 转 Base64（浏览器兼容）
    */
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     let binary = ''
