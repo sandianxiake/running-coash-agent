@@ -60,8 +60,9 @@ const periodLabel = computed(() => {
 function startVoiceInput() {
   // 检查浏览器支持
   const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
+  
   if (!SpeechRecognition) {
-    alert('您的浏览器不支持语音识别，请使用 Chrome 或 Edge 浏览器')
+    alert('您的浏览器不支持语音识别\n\n请使用以下浏览器：\n• Chrome (推荐)\n• Edge\n• Safari 14.1+')
     return
   }
   
@@ -75,48 +76,58 @@ function startVoiceInput() {
   }
   
   // 创建语音识别实例
-  const recognition = new SpeechRecognition()
-  recognition.lang = 'zh-CN'
-  recognition.continuous = true
-  recognition.interimResults = true
-  
-  recognition.onstart = () => {
-    isRecording.value = true
-  }
-  
-  recognition.onresult = (event: any) => {
-    let finalTranscript = ''
-    let interimTranscript = ''
+  try {
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'zh-CN'
+    recognition.continuous = true
+    recognition.interimResults = true
     
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcript = event.results[i][0].transcript
-      if (event.results[i].isFinal) {
-        finalTranscript += transcript
-      } else {
-        interimTranscript += transcript
+    recognition.onstart = () => {
+      isRecording.value = true
+      console.log('语音识别已启动')
+    }
+    
+    recognition.onresult = (event: any) => {
+      let finalTranscript = ''
+      let interimTranscript = ''
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript
+        } else {
+          interimTranscript += transcript
+        }
+      }
+      
+      // 如果有最终结果，追加到输入框
+      if (finalTranscript) {
+        inputText.value += finalTranscript
+        console.log('识别结果:', finalTranscript)
       }
     }
     
-    // 如果有最终结果，追加到输入框
-    if (finalTranscript) {
-      inputText.value += finalTranscript
+    recognition.onerror = (event: any) => {
+      console.error('语音识别错误:', event.error)
+      isRecording.value = false
+      if (event.error === 'not-allowed') {
+        alert('请允许使用麦克风\n\n在浏览器地址栏左侧点击"允许"按钮')
+      } else if (event.error === 'no-speech') {
+        alert('未检测到语音，请重试')
+      }
     }
-  }
-  
-  recognition.onerror = (event: any) => {
-    console.error('语音识别错误:', event.error)
-    isRecording.value = false
-    if (event.error === 'not-allowed') {
-      alert('请允许使用麦克风')
+    
+    recognition.onend = () => {
+      isRecording.value = false
+      console.log('语音识别已停止')
     }
+    
+    voiceRecognition.value = recognition
+    recognition.start()
+  } catch (e) {
+    console.error('创建语音识别失败:', e)
+    alert('语音识别启动失败，请刷新页面重试')
   }
-  
-  recognition.onend = () => {
-    isRecording.value = false
-  }
-  
-  voiceRecognition.value = recognition
-  recognition.start()
 }
 
 // 滚动到底部
