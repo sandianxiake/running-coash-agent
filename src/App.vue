@@ -2,7 +2,7 @@
 import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { getAgent, type Message } from './agent'
 import { generateQuickQuestions } from './api/agent'
-import { XFVoiceRecognition } from './utils/xfVoice'
+import { XfVoice } from './utils/aliVoice'
 import * as echarts from 'echarts'
 import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory } from './store/storage'
 
@@ -41,7 +41,7 @@ const quickQuestions = ref<string[]>([])
 
 // 语音识别状态
 const isRecording = ref(false)
-const voiceRecognition = ref<XFVoiceRecognition | null>(null)
+const voiceRecognition = ref<XfVoice | null>(null)
 
 // 数据面板显示状态
 const showDataPanel = ref(false)
@@ -57,24 +57,24 @@ const periodLabel = computed(() => {
   return periodType.value === 'week' ? '周' : periodType.value === 'month' ? '月' : '年'
 })
 
-// 语音录入（讯飞语音识别）
-function startVoiceInput() {
+// 语音录入（阿里云语音识别）
+async function startVoiceInput() {
   // 如果正在录音，则停止
   if (isRecording.value) {
     if (voiceRecognition.value) {
-      voiceRecognition.value.stop()
+      await voiceRecognition.value.stop()
       voiceRecognition.value = null
     }
     isRecording.value = false
     return
   }
   
-  // 创建讯飞语音识别实例
-  const xf = new XFVoiceRecognition({
+  // 创建阿里云语音识别实例
+  const xf = new XfVoice({
     onResult: (text) => {
       // 追加识别结果到输入框
       if (text) {
-        inputText.value += text
+        inputText.value = text
         console.log('识别结果:', text)
       }
     },
@@ -83,13 +83,13 @@ function startVoiceInput() {
       isRecording.value = false
       alert(error)
     },
-    onStatusChange: (status) => {
-      console.log('识别状态:', status)
-      if (status === 'recording') {
-        isRecording.value = true
-      } else if (status === 'completed' || status === 'error') {
-        isRecording.value = false
-      }
+    onStart: () => {
+      console.log('开始录音')
+      isRecording.value = true
+    },
+    onEnd: () => {
+      console.log('录音结束')
+      isRecording.value = false
     }
   })
   
