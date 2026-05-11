@@ -3,18 +3,16 @@
  * 使用 WebSocket 实时语音转写
  */
 
+import CryptoJS from 'crypto-js'
+
 // 讯飞配置
 const XF_APPID = 'c2fb7a0e'
 const XF_API_SECRET = 'OWZhYTBlMmFhOGRlNGU5NDkyMmQ1ODg4'
-const XF_API_KEY = '9c7b4703bab81c43e356b890bb60f555'
 const XF_URL = 'wss://rtasr.xfyun.cn/v1/ws'
 
 export class XFVoiceRecognition {
   private ws: WebSocket | null = null
   private mediaRecorder: MediaRecorder | null = null
-  private audioContext: AudioContext | null = null
-  private analyser: AnalyserNode | null = null
-  private audioChunks: Blob[] = []
   private onResult: ((text: string) => void) | null = null
   private onError: ((error: string) => void) | null = null
   private onStatusChange: ((status: string) => void) | null = null
@@ -23,6 +21,7 @@ export class XFVoiceRecognition {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 3
   private stream: MediaStream | null = null
+  private audioChunks: Blob[] = []
   
   constructor(options: {
     onResult?: (text: string) => void
@@ -36,46 +35,23 @@ export class XFVoiceRecognition {
   
   /**
    * 生成讯飞签名
+   * 公式: Base64(HMAC-SHA1(MD5(APPID + curTime), APISecret))
    */
-  private async generateSignature(): Promise<string> {
-    const curTime = Math.floor(Date.now() / 1000).toString()
-    const param = '{"engine_type":"sms16k","aue":"raw"}'
-    const paramBase64 = btoa(param)
-    const signatureSrc = XF_APPID + curTime + paramBase64
-    
-    // 使用 Web Crypto API 计算 HMAC-SHA1
-    const encoder = new TextEncoder()
-    const keyData = encoder.encode(XF_API_SECRET)
-    const messageData = encoder.encode(signatureSrc)
-    
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-1' },
-      false,
-      ['sign']
-    )
-    
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData)
-    const signatureArray = new Uint8Array(signature)
-    let signatureStr = ''
-    for (let i = 0; i < signatureArray.length; i++) {
-      signatureStr += String.fromCharCode(signatureArray[i])
-    }
-    
-    return btoa(signatureStr)
+  private generateSignature(ts: number): string {
+    const strToHash = XF_APPID + ts
+    const md5Result = CryptoJS.MD5(strToHash).toString()
+    const hmacResult = CryptoJS.HmacSHA1(md5Result, XF_API_SECRET)
+    return hmacResult.toString(CryptoJS.enc.Base64)
   }
   
   /**
    * 生成 WebSocket URL
    */
-  private async generateUrl(): Promise<string> {
-    const curTime = Math.floor(Date.now() / 1000).toString()
-    const param = '{"engine_type":"sms16k","aue":"raw"}'
-    const paramBase64 = btoa(param)
-    const signa = await this.generateSignature()
+  private generateUrl(): string {
+    const ts = Math.floor(Date.now() / 1000)
+    const signa = this.generateSignature(ts)
     
-    return `${XF_URL}?appid=${XF_APPID}&engine_type=sms16k&aue=raw&lang=zh-CN&curtime=${curTime}&signa=${signa}&signparam=${paramBase64}`
+    return `${XF_URL}?appid=${XF_APPID}&ts=${ts}&signa=${signa}&engine_type=sms16k&lang=zh-CN`
   }
   
   /**
@@ -94,13 +70,6 @@ export class XFVoiceRecognition {
           noiseSuppression: true
         } 
       })
-      
-      // 创建音频上下文用于可视化
-      this.audioContext = new AudioContext()
-      const source = this.audioContext.createMediaStreamSource(this.stream)
-      this.analyser = this.audioContext.createAnalyser()
-      this.analyser.fftSize = 256
-      source.connect(this.analyser)
       
       // 创建 MediaRecorder
       this.mediaRecorder = new MediaRecorder(this.stream, {
@@ -136,9 +105,9 @@ export class XFVoiceRecognition {
   /**
    * 连接讯飞 WebSocket
    */
-  private async connect(): Promise<void> {
+  private connect(): void {
     try {
-      const url = await this.generateUrl()
+      const url = this.generateUrl()
       console.log('讯飞 WebSocket URL:', url)
       
       this.ws = new WebSocket(url)
@@ -186,6 +155,8 @@ export class XFVoiceRecognition {
     try {
       const json = JSON.parse(data)
       
+      console.log('讯飞消息:', json)
+      
       if (json.code !== '0') {
         console.error('讯飞错误:', json.code, json.message)
         this.onError?.(`识别错误: ${json.code}`)
@@ -200,15 +171,9 @@ export class XFVoiceRecognition {
           text += word.cw[0].w
         }
         
-        if (text && json.data.result.status === 2) {
+        if (text) {
           this.onResult?.(text)
         }
-      }
-      
-      // 处理结束
-      if (json.data && json.data.status === 2) {
-        console.log('语音识别结束')
-        this.onStatusChange?.('completed')
       }
       
     } catch (error) {
@@ -225,35 +190,20 @@ export class XFVoiceRecognition {
     const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' })
     const arrayBuffer = await audioBlob.arrayBuffer()
     
-    // 转换为 16kHz PCM
-    const pcmData = await this.convertToPCM(arrayBuffer)
+    // 转换为 Base64
+    const base64 = this.arrayBufferToBase64(arrayBuffer)
     
     if (this.ws && this.isConnected) {
-      // 发送文本指令开始识别
-      const startCommand = {
-        common: { appid: XF_APPID },
-        business: {
-          engine_type: 'sms16k',
-          aue: 'raw',
-          lang: 'zh-CN'
-        },
+      // 发送结束指令
+      const endCommand = {
         data: {
           status: 2,
-          data: this.arrayBufferToBase64(pcmData)
+          data: base64
         }
       }
       
-      this.ws.send(JSON.stringify(startCommand))
+      this.ws.send(JSON.stringify(endCommand))
     }
-  }
-  
-  /**
-   * 转换为 16kHz PCM
-   */
-  private async convertToPCM(audioBuffer: ArrayBuffer): Promise<Uint8Array> {
-    // 直接返回原始音频数据（如果是 opus 编码需要解码）
-    // 简化处理：直接使用原始数据
-    return new Uint8Array(audioBuffer)
   }
   
   /**
@@ -280,11 +230,6 @@ export class XFVoiceRecognition {
         this.stream.getTracks().forEach(track => track.stop())
         this.stream = null
       }
-      
-      if (this.audioContext) {
-        this.audioContext.close()
-        this.audioContext = null
-      }
     }
     
     if (this.ws) {
@@ -296,19 +241,9 @@ export class XFVoiceRecognition {
   }
   
   /**
-   * 获取音频分析数据（用于可视化）
+   * 获取音频分析数据
    */
   getAudioLevel(): number {
-    if (!this.analyser) return 0
-    
-    const dataArray = new Uint8Array(this.analyser.frequencyBinCount)
-    this.analyser.getByteFrequencyData(dataArray)
-    
-    let sum = 0
-    for (let i = 0; i < dataArray.length; i++) {
-      sum += dataArray[i]
-    }
-    
-    return sum / dataArray.length / 255
+    return 0
   }
 }
