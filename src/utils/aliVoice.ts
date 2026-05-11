@@ -90,11 +90,9 @@ export class XfVoice {
     return new Promise((resolve, reject) => {
       this.taskId = generateTaskId()
       
-      this.ws = new WebSocket(WS_URL, {
-        headers: {
-          Authorization: `bearer ${ALI_API_KEY}`
-        }
-      })
+      // 阿里云 Fun-ASR 使用 URL 参数传递 API Key
+      const wsUrl = `${WS_URL}?apiKey=${ALI_API_KEY}`
+      this.ws = new WebSocket(wsUrl)
       
       this.ws.onopen = () => {
         console.log('阿里云 WebSocket 已连接')
