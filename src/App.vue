@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { getAgent, type Message } from './agent'
 import { generateQuickQuestions } from './api/agent'
+import { XFVoiceRecognition } from './utils/xfVoice'
 import * as echarts from 'echarts'
 import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory } from './store/storage'
 
@@ -40,7 +41,7 @@ const quickQuestions = ref<string[]>([])
 
 // 语音识别状态
 const isRecording = ref(false)
-const voiceRecognition = ref<any>(null)
+const voiceRecognition = ref<XFVoiceRecognition | null>(null)
 
 // 数据面板显示状态
 const showDataPanel = ref(false)
@@ -56,109 +57,44 @@ const periodLabel = computed(() => {
   return periodType.value === 'week' ? '周' : periodType.value === 'month' ? '月' : '年'
 })
 
-// 语音录入
+// 语音录入（讯飞语音识别）
 function startVoiceInput() {
-  // 检查浏览器支持
-  const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
-  
-  if (!SpeechRecognition) {
-    alert('您的浏览器不支持语音识别\n\n请使用以下浏览器：\n• Chrome (推荐)\n• Edge\n• Safari 14.1+')
-    return
-  }
-  
   // 如果正在录音，则停止
   if (isRecording.value) {
     if (voiceRecognition.value) {
       voiceRecognition.value.stop()
+      voiceRecognition.value = null
     }
     isRecording.value = false
     return
   }
   
-  // 创建语音识别实例
-  try {
-    const recognition = new SpeechRecognition()
-    
-    // 配置
-    recognition.lang = 'zh-CN'
-    recognition.continuous = true
-    recognition.interimResults = true
-    recognition.maxAlternatives = 1
-    
-    // 添加 eventHandlers 属性（某些浏览器需要）
-    const eventHandlerMap: Record<string, any> = {}
-    
-    // 事件处理
-    recognition.onstart = () => {
-      isRecording.value = true
-      console.log('✓ 语音识别已启动')
-    }
-    
-    recognition.onaudiostart = () => {
-      console.log('✓ 音频已启动')
-    }
-    
-    recognition.onsoundstart = () => {
-      console.log('✓ 检测到声音')
-    }
-    
-    recognition.onspeechstart = () => {
-      console.log('✓ 检测到语音')
-    }
-    
-    recognition.onresult = (event: any) => {
-      console.log('✓ 收到识别结果:', event.results)
-      
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i]
-        const transcript = result[0].transcript
-        const confidence = result[0].confidence
-        
-        console.log('  识别文字:', transcript, '置信度:', confidence.toFixed(2))
-        
-        if (result.isFinal) {
-          inputText.value += transcript
-          console.log('✓ 追加识别结果:', transcript)
-        }
+  // 创建讯飞语音识别实例
+  const xf = new XFVoiceRecognition({
+    onResult: (text) => {
+      // 追加识别结果到输入框
+      if (text) {
+        inputText.value += text
+        console.log('识别结果:', text)
+      }
+    },
+    onError: (error) => {
+      console.error('语音识别错误:', error)
+      isRecording.value = false
+      alert(error)
+    },
+    onStatusChange: (status) => {
+      console.log('识别状态:', status)
+      if (status === 'recording') {
+        isRecording.value = true
+      } else if (status === 'completed' || status === 'error') {
+        isRecording.value = false
       }
     }
-    
-    recognition.onnomatch = (event: any) => {
-      console.log('✗ 未匹配到结果:', event.results)
-    }
-    
-    recognition.onerror = (event: any) => {
-      console.error('✗ 语音识别错误:', event.error)
-      isRecording.value = false
-      
-      const errorMessages: Record<string, string> = {
-        'not-allowed': '请允许使用麦克风',
-        'no-speech': '未检测到语音，请对着麦克风说话',
-        'network': '⚠️ 网络错误，可能是 Google 服务被限制\n\n建议：\n• 使用 VPN\n• 或在 localhost 环境测试',
-        'audio-capture': '无法获取音频设备',
-        'aborted': '识别被中断'
-      }
-      
-      const msg = errorMessages[event.error] || `识别错误: ${event.error}`
-      alert(msg)
-    }
-    
-    recognition.onend = () => {
-      isRecording.value = false
-      console.log('✓ 语音识别已结束')
-    }
-    
-    // 保存引用
-    voiceRecognition.value = recognition
-    
-    console.log('开始启动语音识别...')
-    recognition.start()
-    console.log('已调用 start()')
-    
-  } catch (e) {
-    console.error('创建语音识别失败:', e)
-    alert('语音识别启动失败，请刷新页面重试')
-  }
+  })
+  
+  voiceRecognition.value = xf
+  xf.start()
 }
 
 // 滚动到底部
