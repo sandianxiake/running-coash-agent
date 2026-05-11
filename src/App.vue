@@ -79,7 +79,7 @@ function startVoiceInput() {
   try {
     const recognition = new SpeechRecognition()
     recognition.lang = 'zh-CN'
-    recognition.continuous = true
+    recognition.continuous = false
     recognition.interimResults = true
     
     recognition.onstart = () => {
@@ -88,23 +88,29 @@ function startVoiceInput() {
     }
     
     recognition.onresult = (event: any) => {
-      let finalTranscript = ''
-      let interimTranscript = ''
+      console.log('识别事件:', event.results)
       
+      let finalTranscript = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) {
           finalTranscript += transcript
         } else {
-          interimTranscript += transcript
+          // 实时显示中间结果
+          inputText.value = transcript
         }
       }
       
-      // 如果有最终结果，追加到输入框
+      // 最终结果
       if (finalTranscript) {
-        inputText.value += finalTranscript
-        console.log('识别结果:', finalTranscript)
+        inputText.value = finalTranscript
+        console.log('最终识别结果:', finalTranscript)
       }
+    }
+    
+    recognition.onspeechend = () => {
+      console.log('说话结束')
+      recognition.stop()
     }
     
     recognition.onerror = (event: any) => {
@@ -114,6 +120,8 @@ function startVoiceInput() {
         alert('请允许使用麦克风\n\n在浏览器地址栏左侧点击"允许"按钮')
       } else if (event.error === 'no-speech') {
         alert('未检测到语音，请重试')
+      } else if (event.error === 'network') {
+        alert('网络错误，请检查网络连接')
       }
     }
     
