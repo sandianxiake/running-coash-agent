@@ -89,16 +89,21 @@ export async function recognizeRunningData(imageDataUrl: string): Promise<Simple
     console.log('方舟 API 返回:', data)
 
     // 解析返回结果 - V3 API 格式
-    if (data.output && data.output.choices) {
-      const content = data.output.choices[0]?.message?.content || ''
+    // output 是一个数组，包含 reasoning 和 message
+    const outputArray = data.output || []
+    
+    // 找到 message 类型的输出
+    const messageOutput = outputArray.find((item: any) => item.type === 'message')
+    const content = messageOutput?.content?.[0]?.text || ''
 
-      // 尝试提取 JSON
-      let jsonStr = content
-      const jsonMatch = content.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0]
-      }
+    // 尝试提取 JSON
+    let jsonStr = content
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0]
+    }
 
+    try {
       const raw = JSON.parse(jsonStr)
 
       return {
@@ -109,28 +114,8 @@ export async function recognizeRunningData(imageDataUrl: string): Promise<Simple
         avgHeartRate: raw.avg_heart_rate || null,
         cadence: raw.avg_step_frequency || null
       }
-    } else if (data.output?.text) {
-      // 另一种可能的返回格式
-      const content = data.output.text
-
-      let jsonStr = content
-      const jsonMatch = content.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0]
-      }
-
-      const raw = JSON.parse(jsonStr)
-
-      return {
-        date: raw.date || '',
-        duration: raw.duration || '',
-        distance: raw.distance || 0,
-        pace: raw.pace || '',
-        avgHeartRate: raw.avg_heart_rate || null,
-        cadence: raw.avg_step_frequency || null
-      }
-    } else {
-      console.error('方舟 API 返回格式错误:', data)
+    } catch (e) {
+      console.error('解析 JSON 失败:', e)
       return null
     }
   } catch (error) {
