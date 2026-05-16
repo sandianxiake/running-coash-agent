@@ -53,25 +53,21 @@ export async function recognizeRunningData(imageBase64: string): Promise<SimpleR
       },
       body: JSON.stringify({
         model: 'doubao-seed-2-0-lite-260428',
-        messages: [
-          {
-            role: 'system',
-            content: SYSTEM_PROMPT
-          },
+        input: [
           {
             role: 'user',
             content: [
               {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${imageBase64}`
-                }
+                type: 'input_image',
+                image_url: `data:image/jpeg;base64,${imageBase64}`
+              },
+              {
+                type: 'input_text',
+                text: SYSTEM_PROMPT
               }
             ]
           }
-        ],
-        max_tokens: 1000,
-        temperature: 0.1
+        ]
       })
     })
 
@@ -82,10 +78,11 @@ export async function recognizeRunningData(imageBase64: string): Promise<SimpleR
     }
 
     const data = await response.json()
+    console.log('方舟 API 返回:', data)
 
     // 解析返回结果
-    if (data.choices && data.choices[0]?.message?.content) {
-      const content = data.choices[0].message.content
+    if (data.output && data.output.text) {
+      const content = data.output.text
 
       // 尝试提取 JSON
       let jsonStr = content
