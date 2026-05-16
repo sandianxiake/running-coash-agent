@@ -10,6 +10,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/api/coze-proxy': {
+        target: 'https://api.coze.cn',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/coze-proxy/, ''),
+      },
+    },
+  },
   css: {
     postcss: {
       plugins: [

@@ -4,7 +4,9 @@
 
 // 扣子工作流配置
 const COZE_WORKFLOW_ID = '7639997536598278163'
-const COZE_API_URL = 'https://api.coze.cn/v1/workflow/Run'
+const COZE_API_URL = import.meta.env.DEV 
+  ? '/api/coze-proxy/v1/workflow/Run'  // Vite dev proxy
+  : '/api/coze-proxy/v1/workflow/Run'    // 生产环境需要配置服务端代理
 
 // 从环境变量获取扣子 Token
 function getCozeToken(): string {
