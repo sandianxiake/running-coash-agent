@@ -37,7 +37,8 @@ running-coach-agent/
     │       └── user.ts     # 用户资料（localStorage）
     ├── api/                # API 接口
     │   ├── agent.ts        # 通义千问 API
-    │   └── search.ts       # 搜索服务（内置+外部）
+    │   ├── search.ts       # 搜索服务（内置+外部）
+    │   └── coze.ts         # 扣子工作流 API（图片识别）
     ├── store/              # 状态管理
     │   └── storage.ts      # localStorage 持久化
     └── views/              # 页面视图
@@ -107,6 +108,13 @@ VITE_DEEPSEEK_API_KEY = sk-9efc53fac08d4369b3d26b1ae37eb7ea
 - 配速趋势折线图
 - 训练计划进度饼图
 - 数据统计卡片
+
+### 5. 扣子工作流图片识别
+- 上传跑步截图，自动识别跑步数据
+- 调用扣子工作流 `img_reg` (workflow_id: 7639997536598278163)
+- 支持多图批量识别
+- 识别结果自动存入 localStorage
+- **需要配置**: 用户需在 localStorage 中设置 `coze_token`（扣子个人访问令牌）
 
 ## 用户偏好与长期约束
 - 使用 pnpm 管理依赖，禁止 npm 或 yarn

@@ -2,7 +2,8 @@
 import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { getAgent, type Message } from './agent'
 import { generateQuickQuestions } from './api/agent'
-import { XfVoice } from './utils/aliVoice'
+import { recognizeRunningData, convertToRunningRecord } from './api/coze'
+import { addRunningRecord } from './store/storage'
 import * as echarts from 'echarts'
 import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory } from './store/storage'
 
@@ -11,9 +12,11 @@ const inputText = ref('')
 const isLoading = ref(false)
 const agent = getAgent()
 
-// 图片上传（暂时屏蔽）
-// const uploadedImages = ref<{ id: string; url: string; name: string }[]>([])
-// const imageInputRef = ref<HTMLInputElement | null>(null)
+// 图片上传相关
+const uploadedImages = ref<{ id: string; url: string; name: string }[]>([])
+const imageInputRef = ref<HTMLInputElement | null>(null)
+const isRecognizing = ref(false)
+const recognizingImageId = ref<string | null>(null)
 
 // 图表引用
 const weeklyChartRef = ref<HTMLDivElement | null>(null)
@@ -39,12 +42,102 @@ const streamingMessageId = ref<string | null>(null)
 // 快捷问题（由 AI 动态生成）
 const quickQuestions = ref<string[]>([])
 
-// 语音识别状态
-const isRecording = ref(false)
-const voiceRecognition = ref<XfVoice | null>(null)
-
 // 数据面板显示状态
 const showDataPanel = ref(false)
+
+// 图片上传触发
+function triggerImageUpload() {
+  imageInputRef.value?.click()
+}
+
+// 处理图片选择
+function handleImageSelect(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+  if (!files) return
+
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const url = e.target?.result as string
+      uploadedImages.value.push({
+        id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        url,
+        name: file.name
+      })
+    }
+    reader.readAsDataURL(file)
+  })
+
+  // 清空 input，允许重复选择同一文件
+  input.value = ''
+}
+
+// 移除图片
+function removeImage(id: string) {
+  uploadedImages.value = uploadedImages.value.filter(img => img.id !== id)
+}
+
+// 识别单张图片
+async function recognizeImage(imageId: string) {
+  const image = uploadedImages.value.find(img => img.id === imageId)
+  if (!image) return
+
+  isRecognizing.value = true
+  recognizingImageId.value = imageId
+
+  try {
+    // 调用扣子工作流识别图片
+    const result = await recognizeRunningData(image.url)
+    
+    if (result) {
+      // 转换并保存跑步记录
+      const record = convertToRunningRecord(result)
+      addRunningRecord(record)
+      
+      // 添加成功消息
+      messages.value.push({
+        id: `recognize_${Date.now()}`,
+        role: 'assistant',
+        content: `✅ 识别成功！已添加跑步记录：\n📅 ${result.date}\n🏃 距离：${result.distance} km\n⏱️ 时长：${result.duration}\n⚡ 配速：${result.pace}\n❤️ 心率：${result.avg_heart_rate || '-'} bpm\n🔥 热量：${result.calories} 千卡`,
+        timestamp: Date.now()
+      })
+      
+      // 从上传列表移除已识别的图片
+      removeImage(imageId)
+      
+      // 刷新数据面板
+      loadUserData()
+    } else {
+      messages.value.push({
+        id: `error_${Date.now()}`,
+        role: 'assistant',
+        content: '❌ 识别失败，请检查扣子 Token 是否配置正确，或尝试重新上传图片。',
+        timestamp: Date.now()
+      })
+    }
+  } catch (error: any) {
+    console.error('识别错误:', error)
+    messages.value.push({
+      id: `error_${Date.now()}`,
+      role: 'assistant',
+      content: `❌ 识别出错：${error.message || '请检查网络和 Token 配置'}`,
+      timestamp: Date.now()
+    })
+  } finally {
+    isRecognizing.value = false
+    recognizingImageId.value = null
+  }
+}
+
+// 一键识别所有图片
+async function recognizeAllImages() {
+  for (const image of [...uploadedImages.value]) {
+    await recognizeImage(image.id)
+  }
+}
 
 // 消息列表滚动引用
 const messagesRef = ref<HTMLDivElement | null>(null)
@@ -56,46 +149,6 @@ const periodType = ref<'week' | 'month' | 'year'>('week')
 const periodLabel = computed(() => {
   return periodType.value === 'week' ? '周' : periodType.value === 'month' ? '月' : '年'
 })
-
-// 语音录入（阿里云语音识别）
-async function startVoiceInput() {
-  // 如果正在录音，则停止
-  if (isRecording.value) {
-    if (voiceRecognition.value) {
-      await voiceRecognition.value.stop()
-      voiceRecognition.value = null
-    }
-    isRecording.value = false
-    return
-  }
-  
-  // 创建阿里云语音识别实例
-  const xf = new XfVoice({
-    onResult: (text) => {
-      // 追加识别结果到输入框
-      if (text) {
-        inputText.value = text
-        console.log('识别结果:', text)
-      }
-    },
-    onError: (error) => {
-      console.error('语音识别错误:', error)
-      isRecording.value = false
-      alert(error)
-    },
-    onStart: () => {
-      console.log('开始录音')
-      isRecording.value = true
-    },
-    onEnd: () => {
-      console.log('录音结束')
-      isRecording.value = false
-    }
-  })
-  
-  voiceRecognition.value = xf
-  xf.start()
-}
 
 // 滚动到底部
 function scrollToBottom() {
@@ -776,39 +829,6 @@ function askQuestion(question: string) {
   inputText.value = question
   sendMessage()
 }
-
-// 图片上传（暂时屏蔽）
-// function triggerImageUpload() {
-//   imageInputRef.value?.click()
-// }
-
-// function handleImageSelect(event: Event) {
-//   const input = event.target as HTMLInputElement
-//   const files = input.files
-//   if (!files) return
-
-//   Array.from(files).forEach(file => {
-//     if (!file.type.startsWith('image/')) return
-
-//     const reader = new FileReader()
-//     reader.onload = (e) => {
-//       const url = e.target?.result as string
-//       uploadedImages.value.push({
-//         id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-//         url,
-//         name: file.name
-//       })
-//     }
-//     reader.readAsDataURL(file)
-//   })
-
-//   // 清空 input，允许重复选择同一文件
-//   input.value = ''
-// }
-
-// function removeImage(id: string) {
-//   uploadedImages.value = uploadedImages.value.filter(img => img.id !== id)
-// }
 </script>
 
 <template>
@@ -937,23 +957,22 @@ function askQuestion(question: string) {
 
     <!-- 固定底部输入框 -->
     <div class="input-area">
-      <!-- 图片上传按钮（暂时屏蔽）
+      <!-- 图片上传按钮 -->
       <div class="image-upload">
-        <button class="image-btn" @click="triggerImageUpload" :disabled="isLoading">
+        <button class="image-btn" @click="triggerImageUpload" :disabled="isLoading" title="上传跑步截图">
           📷
         </button>
       </div>
-      -->
       
-      <!-- 语音录入按钮 -->
+      <!-- 识别全部按钮 -->
       <button 
-        @click="startVoiceInput" 
-        class="voice-btn"
-        :class="{ recording: isRecording }"
-        :disabled="isLoading"
-        :title="isRecording ? '停止录音' : '语音录入'"
+        v-if="uploadedImages.length > 0"
+        @click="recognizeAllImages" 
+        class="recognize-btn"
+        :disabled="isRecognizing"
+        :title="'识别 ' + uploadedImages.length + ' 张图片'"
       >
-        {{ isRecording ? '🔴' : '🎤' }}
+        {{ isRecognizing ? '识别中...' : '🚀 识别全部' }}
       </button>
       
       <textarea
@@ -973,15 +992,25 @@ function askQuestion(question: string) {
       </button>
     </div>
     
-    <!-- 图片预览（暂时屏蔽）
+    <!-- 图片预览 -->
     <div class="image-preview" v-if="uploadedImages.length > 0">
       <div v-for="img in uploadedImages" :key="img.id" class="image-item">
         <img :src="img.url" :alt="img.name" />
-        <button class="remove-btn" @click="removeImage(img.id)">×</button>
+        <div class="image-actions">
+          <button 
+            class="recognize-single-btn"
+            @click="recognizeImage(img.id)"
+            :disabled="isRecognizing"
+            :title="'识别这张图片'"
+          >
+            {{ recognizingImageId === img.id ? '识别中...' : '🔍 识别' }}
+          </button>
+          <button class="remove-btn" @click="removeImage(img.id)" title="移除">×</button>
+        </div>
       </div>
     </div>
     
-    <!-- 隐藏的文件输入
+    <!-- 隐藏的文件输入 -->
     <input
       ref="imageInputRef"
       type="file"
@@ -990,7 +1019,6 @@ function askQuestion(question: string) {
       @change="handleImageSelect"
       style="display: none"
     />
-    -->
   </div>
 </template>
 
@@ -1533,6 +1561,119 @@ function askQuestion(question: string) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 识别按钮 */
+.recognize-btn {
+  height: 44px;
+  padding: 0 16px;
+  background: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.recognize-btn:hover:not(:disabled) {
+  background: #F57C00;
+}
+
+.recognize-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* 单张识别按钮 */
+.image-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.recognize-single-btn {
+  font-size: 10px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.recognize-single-btn:hover:not(:disabled) {
+  background: #43A047;
+}
+
+.recognize-single-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+/* 图片预览区域优化 */
+.image-preview {
+  position: fixed;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border-top: 1px solid #eee;
+  max-width: 800px;
+  margin: 0 auto;
+  z-index: 99;
+}
+
+.image-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.image-item .remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.image-item .remove-btn:hover {
+  background: #f44336;
 }
 
 /* 响应式 */
