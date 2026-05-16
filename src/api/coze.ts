@@ -5,13 +5,8 @@
 // 扣子工作流配置
 const COZE_WORKFLOW_ID = '7639997536598278163'
 
-// API 端点 - 开发环境用 Vite 代理，生产环境用 Netlify Functions
-const getApiUrl = () => {
-  if (import.meta.env.DEV) {
-    return '/api/coze-proxy'  // Vite dev proxy
-  }
-  return '/api/coze-proxy'     // Netlify Functions
-}
+// API 端点 - 火山引擎函数代理
+const API_URL = 'https://sd848bm9c18sqnli48l90.apigateway-cn-guangzhou.volceapi.com/api/coze-proxy'
 
 // 从环境变量获取扣子 Token
 function getCozeToken(): string {
@@ -24,8 +19,8 @@ function getCozeToken(): string {
   return localStorage.getItem('coze_token') || 'cztei_hwpQD5pxgI46J7ltFeHUjBS0RvEChTPDn9R7d8vmkgJTbngskbePPXr6wfR4xoloG'
 }
 
+// 调用扣子工作流识别图片
 // 跑步数据识别结果接口
-// 简化的跑步数据接口
 export interface SimpleRunningData {
   date: string
   duration: string
@@ -35,17 +30,16 @@ export interface SimpleRunningData {
   cadence: number | null
 }
 
-// 调用扣子工作流识别图片
-export async function recognizeRunningData(imageBase64: string): Promise<RunningDataResult | null> {
+export async function recognizeRunningData(imageBase64: string): Promise<SimpleRunningData | null> {
   const token = getCozeToken()
   
   if (!token) {
-    console.error('未配置扣子 Token，请设置环境变量 VITE_COZE_TOKEN 或在 localStorage 中设置 coze_token')
+    console.error('未配置扣子 Token')
     return null
   }
 
   try {
-    const response = await fetch(getApiUrl(), {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
