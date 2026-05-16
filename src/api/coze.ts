@@ -16,7 +16,7 @@ function getCozeToken(): string {
     return envToken
   }
   // 兼容 localStorage（开发时使用）
-  return localStorage.getItem('coze_token') || 'cztei_hwpQD5pxgI46J7ltFeHUjBS0RvEChTPDn9R7d8vmkgJTbngskbePPXr6wfR4xoloG'
+  return localStorage.getItem('coze_token') || 'cztei_hYMIns5fCJMVN8NLrSButZCmqWhYSbA8UnLFGu2ZhWGxeTlMvVDYjte8DxzU8uLG9'
 }
 
 // 调用扣子工作流识别图片
