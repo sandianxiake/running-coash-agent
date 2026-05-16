@@ -43,8 +43,16 @@ export interface SimpleRunningData {
   cadence: number | null
 }
 
+// 提取真正的 base64 部分（去掉 data:image/xxx;base64, 前缀）
+function extractBase64(dataUrl: string): string {
+  const match = dataUrl.match(/base64,(.+)$/)
+  return match ? match[1] : dataUrl
+}
+
 // 调用火山方舟 API 识别图片
-export async function recognizeRunningData(imageBase64: string): Promise<SimpleRunningData | null> {
+export async function recognizeRunningData(imageDataUrl: string): Promise<SimpleRunningData | null> {
+  const imageBase64 = extractBase64(imageDataUrl)
+  
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
