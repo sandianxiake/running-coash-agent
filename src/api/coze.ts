@@ -4,9 +4,14 @@
 
 // 扣子工作流配置
 const COZE_WORKFLOW_ID = '7639997536598278163'
-const COZE_API_URL = import.meta.env.DEV 
-  ? '/api/coze-proxy/v1/workflow/Run'  // Vite dev proxy
-  : '/api/coze-proxy/v1/workflow/Run'    // 生产环境需要配置服务端代理
+
+// API 端点 - 开发环境用 Vite 代理，生产环境用 Netlify Functions
+const getApiUrl = () => {
+  if (import.meta.env.DEV) {
+    return '/api/coze-proxy'  // Vite dev proxy
+  }
+  return '/api/coze-proxy'     // Netlify Functions
+}
 
 // 从环境变量获取扣子 Token
 function getCozeToken(): string {
@@ -40,7 +45,7 @@ export async function recognizeRunningData(imageBase64: string): Promise<Running
   }
 
   try {
-    const response = await fetch(COZE_API_URL, {
+    const response = await fetch(getApiUrl(), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
