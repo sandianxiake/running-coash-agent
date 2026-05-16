@@ -114,7 +114,7 @@ async function recognizeImage(imageId: string) {
       messages.value.push({
         id: `error_${Date.now()}`,
         role: 'assistant',
-        content: '❌ 识别失败，请检查扣子 Token 是否配置正确，或尝试重新上传图片。',
+        content: '❌ 识别失败，请检查网络或图片格式后重试。',
         timestamp: Date.now()
       })
     }
