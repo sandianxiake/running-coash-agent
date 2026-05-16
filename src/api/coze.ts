@@ -18,18 +18,14 @@ function getCozeToken(): string {
 }
 
 // 跑步数据识别结果接口
-export interface RunningDataResult {
+// 简化的跑步数据接口
+export interface SimpleRunningData {
   date: string
-  time: string
   duration: string
   distance: number
   pace: string
-  calories: number
-  avg_heart_rate: number | null
-  steps: number
-  avg_step_frequency: number | null
-  elevation_gain: number
-  elevation_loss: number
+  avgHeartRate: number | null
+  cadence: number | null
 }
 
 // 调用扣子工作流识别图片
@@ -66,19 +62,24 @@ export async function recognizeRunningData(imageBase64: string): Promise<Running
     
     // 解析返回结果
     if (data.code === 0 && data.data) {
-      // 工作流返回的数据在 data.output 中
       const output = data.data.output || data.data
       
-      // 尝试解析 output 字段（可能是字符串或对象）
-      let result: RunningDataResult
+      let raw: any
       if (typeof output === 'string') {
-        result = JSON.parse(output)
+        raw = JSON.parse(output)
       } else {
-        result = output
+        raw = output
       }
       
-      // 转换格式以匹配本地存储的 RunningRecord
-      return result
+      // 只提取需要的字段
+      return {
+        date: raw.date || '',
+        duration: raw.duration || '',
+        distance: raw.distance || 0,
+        pace: raw.pace || '',
+        avgHeartRate: raw.avg_heart_rate || null,
+        cadence: raw.avg_step_frequency || null
+      }
     } else {
       console.error('扣子 API 返回错误:', data.msg || '未知错误')
       return null
@@ -90,7 +91,7 @@ export async function recognizeRunningData(imageBase64: string): Promise<Running
 }
 
 // 将扣子返回的数据转换为 RunningRecord 格式
-export function convertToRunningRecord(result: RunningDataResult) {
+export function convertToRunningRecord(result: SimpleRunningData) {
   // 解析 duration (HH:MM:SS -> 分钟)
   const parseDuration = (duration: string): number => {
     const parts = duration.split(':')
@@ -104,7 +105,6 @@ export function convertToRunningRecord(result: RunningDataResult) {
 
   // 解析 pace (6'37''/km -> 分钟)
   const parsePace = (pace: string): string => {
-    // 匹配 6'37'' 或 6'37"
     const match = pace.match(/(\d+)'(\d+)''?/)
     if (match) {
       return `${match[1]}:${match[2]}`
@@ -119,12 +119,10 @@ export function convertToRunningRecord(result: RunningDataResult) {
     distance: result.distance,
     duration: durationMinutes,
     pace: parsePace(result.pace),
-    avgHeartRate: result.avg_heart_rate || undefined,
+    avgHeartRate: result.avgHeartRate || undefined,
     runningDate: result.date || new Date().toISOString().split('T')[0],
-    createdAt: result.time 
-      ? `${result.date} ${result.time}` 
-      : new Date().toISOString(),
-    cadence: result.avg_step_frequency || undefined,
-    notes: `通过图片识别导入 | 热量: ${result.calories}千卡 | 步数: ${result.steps} | 爬升: ${result.elevation_gain}米`
+    createdAt: new Date().toISOString(),
+    cadence: result.cadence || undefined,
+    notes: '通过图片识别导入'
   }
 }
