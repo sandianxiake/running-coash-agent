@@ -3,7 +3,7 @@
 // ============================================
 
 // API 端点 - 火山引擎函数代理
-const API_URL = 'https://sd848bm9c18sqnli48l90.apigateway-cn-guangzhou.volceapi.com/api/chat/completions'
+const API_URL = 'https://sd848bm9c18sqnli48l90.apigateway-cn-guangzhou.volceapi.com/api/ark-proxy'
 
 // 豆包视觉理解提示词
 const SYSTEM_PROMPT = `你是一个专业的跑步数据提取助手。请从截图中提取以下跑步数据：
@@ -60,19 +60,17 @@ export async function recognizeRunningData(imageDataUrl: string): Promise<Simple
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'doubao-seed-2-0-lite-260428',
-        messages: [
+        model: 'doubao-seed-2-0-lite-260215',
+        input: [
           {
             role: 'user',
             content: [
               {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${imageBase64}`
-                }
+                type: 'input_image',
+                image_url: `data:image/png;base64,${imageBase64}`
               },
               {
-                type: 'text',
+                type: 'input_text',
                 text: SYSTEM_PROMPT
               }
             ]
@@ -90,11 +88,31 @@ export async function recognizeRunningData(imageDataUrl: string): Promise<Simple
     const data = await response.json()
     console.log('方舟 API 返回:', data)
 
-    // 解析返回结果
-    if (data.choices && data.choices[0]?.message?.content) {
-      const content = data.choices[0].message.content
+    // 解析返回结果 - V3 API 格式
+    if (data.output && data.output.choices) {
+      const content = data.output.choices[0]?.message?.content || ''
 
       // 尝试提取 JSON
+      let jsonStr = content
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0]
+      }
+
+      const raw = JSON.parse(jsonStr)
+
+      return {
+        date: raw.date || '',
+        duration: raw.duration || '',
+        distance: raw.distance || 0,
+        pace: raw.pace || '',
+        avgHeartRate: raw.avg_heart_rate || null,
+        cadence: raw.avg_step_frequency || null
+      }
+    } else if (data.output?.text) {
+      // 另一种可能的返回格式
+      const content = data.output.text
+
       let jsonStr = content
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
