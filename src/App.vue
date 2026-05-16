@@ -101,7 +101,7 @@ async function recognizeImage(imageId: string) {
       messages.value.push({
         id: `recognize_${Date.now()}`,
         role: 'assistant',
-        content: `✅ 识别成功！已添加跑步记录：\n📅 ${result.date}\n🏃 距离：${result.distance} km\n⏱️ 时长：${result.duration}\n⚡ 配速：${result.pace}\n❤️ 心率：${result.avg_heart_rate || '-'} bpm\n🔥 热量：${result.calories} 千卡`,
+        content: `✅ 识别成功！已添加跑步记录：\n📅 ${result.date}\n🏃 距离：${result.distance} km\n⏱️ 时长：${result.duration}\n⚡ 配速：${result.pace}\n❤️ 心率：${result.avgHeartRate || '-'} bpm\n🚶 步频：${result.cadence || '-'} 步/分钟`,
         timestamp: Date.now()
       })
       
