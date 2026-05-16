@@ -1,25 +1,38 @@
 // ============================================
-// Coze Workflow API - 调用扣子工作流识别跑步数据
+// 火山方舟 API - 调用豆包视觉理解模型识别跑步数据
 // ============================================
 
-// 扣子工作流配置
-const COZE_WORKFLOW_ID = '7639997536598278163'
-
 // API 端点 - 火山引擎函数代理
-const API_URL = 'https://sd848bm9c18sqnli48l90.apigateway-cn-guangzhou.volceapi.com/api/coze-proxy'
+const API_URL = 'https://sd848bm9c18sqnli48l90.apigateway-cn-guangzhou.volceapi.com/api/ark-proxy'
 
-// 从环境变量获取扣子 Token
-function getCozeToken(): string {
-  // 优先使用环境变量
-  const envToken = import.meta.env.VITE_COZE_TOKEN
-  if (envToken && envToken !== 'pat_xxxxxxxxxxxx') {
-    return envToken
-  }
-  // 兼容 localStorage（开发时使用）
-  return localStorage.getItem('coze_token') || 'cztei_hYMIns5fCJMVN8NLrSButZCmqWhYSbA8UnLFGu2ZhWGxeTlMvVDYjte8DxzU8uLG9'
-}
+// 豆包视觉理解提示词
+const SYSTEM_PROMPT = `你是一个专业的跑步数据提取助手。请从截图中提取以下跑步数据：
 
-// 调用扣子工作流识别图片
+## 必须提取的字段
+| 字段名 | 说明 | 格式要求 |
+|--------|------|----------|
+| date | 跑步日期 | YYYY-MM-DD |
+| duration | 运动时间 | HH:MM:SS |
+| distance | 总距离(公里) | 数字，保留2位小数 |
+| pace | 平均配速 | M'S''/km |
+| avg_heart_rate | 平均心率(次/分钟) | 纯数字 |
+| avg_step_frequency | 平均步频(步/分钟) | 纯数字 |
+
+## 输出要求
+1. 如果某字段在图片中找不到，标记为 null
+2. 所有数值不要带单位
+3. 只返回JSON，不要任何解释
+
+## 输出格式
+{
+  "date": "",
+  "duration": "",
+  "distance": 0,
+  "pace": "",
+  "avg_heart_rate": null,
+  "avg_step_frequency": null
+}`
+
 // 跑步数据识别结果接口
 export interface SimpleRunningData {
   date: string
@@ -30,49 +43,59 @@ export interface SimpleRunningData {
   cadence: number | null
 }
 
+// 调用火山方舟 API 识别图片
 export async function recognizeRunningData(imageBase64: string): Promise<SimpleRunningData | null> {
-  const token = getCozeToken()
-  
-  if (!token) {
-    console.error('未配置扣子 Token')
-    return null
-  }
-
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        workflow_id: COZE_WORKFLOW_ID,
-        parameters: {
-          image: imageBase64
-        }
+        model: 'doubao-1-5-pro-visual-250615',
+        messages: [
+          {
+            role: 'system',
+            content: SYSTEM_PROMPT
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${imageBase64}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.1
       })
     })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      console.error('扣子 API 请求失败:', response.status, errorData)
+      console.error('方舟 API 请求失败:', response.status, errorData)
       throw new Error(`API 请求失败: ${response.status}`)
     }
 
     const data = await response.json()
-    
+
     // 解析返回结果
-    if (data.code === 0 && data.data) {
-      const output = data.data.output || data.data
-      
-      let raw: any
-      if (typeof output === 'string') {
-        raw = JSON.parse(output)
-      } else {
-        raw = output
+    if (data.choices && data.choices[0]?.message?.content) {
+      const content = data.choices[0].message.content
+
+      // 尝试提取 JSON
+      let jsonStr = content
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0]
       }
-      
-      // 只提取需要的字段
+
+      const raw = JSON.parse(jsonStr)
+
       return {
         date: raw.date || '',
         duration: raw.duration || '',
@@ -82,7 +105,7 @@ export async function recognizeRunningData(imageBase64: string): Promise<SimpleR
         cadence: raw.avg_step_frequency || null
       }
     } else {
-      console.error('扣子 API 返回错误:', data.msg || '未知错误')
+      console.error('方舟 API 返回格式错误:', data)
       return null
     }
   } catch (error) {
@@ -91,39 +114,23 @@ export async function recognizeRunningData(imageBase64: string): Promise<SimpleR
   }
 }
 
-// 将扣子返回的数据转换为 RunningRecord 格式
+// 将返回的数据转换为 RunningRecord 格式
 export function convertToRunningRecord(result: SimpleRunningData) {
   // 解析 duration (HH:MM:SS -> 分钟)
   const parseDuration = (duration: string): number => {
     const parts = duration.split(':')
     if (parts.length === 3) {
       return parseInt(parts[0]) * 60 + parseInt(parts[1]) + parseInt(parts[2]) / 60
-    } else if (parts.length === 2) {
-      return parseInt(parts[0]) + parseInt(parts[1]) / 60
     }
     return 0
   }
 
-  // 解析 pace (6'37''/km -> 分钟)
-  const parsePace = (pace: string): string => {
-    const match = pace.match(/(\d+)'(\d+)''?/)
-    if (match) {
-      return `${match[1]}:${match[2]}`
-    }
-    return '0:00'
-  }
-
-  const durationMinutes = parseDuration(result.duration)
-  
   return {
-    id: `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    date: result.date,
+    duration: parseDuration(result.duration),
     distance: result.distance,
-    duration: durationMinutes,
-    pace: parsePace(result.pace),
-    avgHeartRate: result.avgHeartRate || undefined,
-    runningDate: result.date || new Date().toISOString().split('T')[0],
-    createdAt: new Date().toISOString(),
-    cadence: result.cadence || undefined,
-    notes: '通过图片识别导入'
+    pace: result.pace,
+    avgHeartRate: result.avgHeartRate,
+    cadence: result.cadence
   }
 }
