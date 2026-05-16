@@ -6,8 +6,14 @@
 const COZE_WORKFLOW_ID = '7639997536598278163'
 const COZE_API_URL = 'https://api.coze.cn/v1/workflow/Run'
 
-// 从 localStorage 获取用户 token（需要用户登录扣子）
+// 从环境变量获取扣子 Token
 function getCozeToken(): string {
+  // 优先使用环境变量
+  const envToken = import.meta.env.VITE_COZE_TOKEN
+  if (envToken && envToken !== 'pat_xxxxxxxxxxxx') {
+    return envToken
+  }
+  // 兼容 localStorage（开发时使用）
   return localStorage.getItem('coze_token') || ''
 }
 
@@ -31,7 +37,7 @@ export async function recognizeRunningData(imageBase64: string): Promise<Running
   const token = getCozeToken()
   
   if (!token) {
-    console.error('未配置扣子 Token，请先设置 coze_token')
+    console.error('未配置扣子 Token，请设置环境变量 VITE_COZE_TOKEN 或在 localStorage 中设置 coze_token')
     return null
   }
 

@@ -76,6 +76,7 @@ running-coach-agent/
 ### 环境变量（部署时）
 ```
 VITE_DEEPSEEK_API_KEY = sk-9efc53fac08d4369b3d26b1ae37eb7ea
+VITE_COZE_TOKEN = pat_xxxxxxxxxxxx  # 扣子个人访问令牌
 ```
 
 ### 预览脚本
