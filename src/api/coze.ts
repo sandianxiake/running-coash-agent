@@ -14,7 +14,7 @@ function getCozeToken(): string {
     return envToken
   }
   // 兼容 localStorage（开发时使用）
-  return localStorage.getItem('coze_token') || ''
+  return localStorage.getItem('coze_token') || 'cztei_hwpQD5pxgI46J7ltFeHUjBS0RvEChTPDn9R7d8vmkgJTbngskbePPXr6wfR4xoloG'
 }
 
 // 跑步数据识别结果接口
