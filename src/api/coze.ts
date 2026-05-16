@@ -15,8 +15,8 @@ const SYSTEM_PROMPT = `你是一个专业的跑步数据提取助手。请从截
 | duration | 运动时间 | HH:MM:SS |
 | distance | 总距离(公里) | 数字，保留2位小数 |
 | pace | 平均配速 | M'S''/km |
-| avg_heart_rate | 平均心率(次/分钟) | 纯数字 |
-| avg_step_frequency | 平均步频(步/分钟) | 纯数字 |
+| avgHeartRate | 平均心率(次/分钟) | 纯数字 |
+| cadence | 平均步频(步/分钟) | 纯数字 |
 
 ## 输出要求
 1. 如果某字段在图片中找不到，标记为 null
@@ -29,8 +29,8 @@ const SYSTEM_PROMPT = `你是一个专业的跑步数据提取助手。请从截
   "duration": "",
   "distance": 0,
   "pace": "",
-  "avg_heart_rate": null,
-  "avg_step_frequency": null
+  "avgHeartRate": null,
+  "cadence": null
 }`
 
 // 跑步数据识别结果接口
@@ -111,8 +111,8 @@ export async function recognizeRunningData(imageDataUrl: string): Promise<Simple
         duration: raw.duration || '',
         distance: raw.distance || 0,
         pace: raw.pace || '',
-        avgHeartRate: raw.avg_heart_rate || null,
-        cadence: raw.avg_step_frequency || null
+        avgHeartRate: raw.avgHeartRate || null,
+        cadence: raw.cadence || null
       }
     } catch (e) {
       console.error('解析 JSON 失败:', e)
