@@ -52,7 +52,7 @@ export async function recognizeRunningData(imageBase64: string): Promise<SimpleR
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'doubao-seed-2.0-lite',
+        model: 'doubao-seed-2-0-lite-260428',
         messages: [
           {
             role: 'system',
