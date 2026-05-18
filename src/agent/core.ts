@@ -211,11 +211,14 @@ export class RunningCoachAgent {
           name: tc.function.name,
           arguments: JSON.parse(tc.function.arguments)
         }))
+        console.log('[Agent] 检测到工具调用:', calls)
         toolCalls.push(...calls)
 
         // 执行工具
         for (const call of calls) {
+          console.log('[Agent] 执行工具:', call.name, call.arguments)
           const result = await toolRegistry.execute(call.name, call.arguments, this.context)
+          console.log('[Agent] 工具执行结果:', result)
           toolResults.push({
             toolCallId: call.id,
             success: result.success,
