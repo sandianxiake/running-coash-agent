@@ -371,9 +371,11 @@ export class RunningCoachAgent {
       )
 
       const choice = response.choices[0]
+      console.log('[Agent] DeepSeek 响应:', JSON.stringify(response, null, 2))
       
       // 如果有工具调用，使用普通模式（不支持流式）
       if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+        console.log('[Agent] 检测到工具调用:', choice.message.tool_calls)
         const calls = choice.message.tool_calls.map((tc: any) => ({
           id: tc.id,
           name: tc.function.name,
