@@ -136,11 +136,14 @@ export function convertToRunningRecord(result: SimpleRunningData) {
   }
 
   return {
-    date: result.date,
-    duration: parseDuration(result.duration),
+    id: `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    runningDate: result.date || new Date().toISOString().split('T')[0],
+    createdAt: new Date().toISOString(),
     distance: result.distance,
+    duration: parseDuration(result.duration),
     pace: result.pace,
     avgHeartRate: result.avgHeartRate,
-    cadence: result.cadence
+    cadence: result.cadence,
+    feeling: '一般',
   }
 }
