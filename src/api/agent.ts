@@ -84,9 +84,10 @@ export async function chatCompletion(
     max_tokens: maxTokens
   }
 
-  // 如果有工具定义，添加 tools 参数
+  // 如果有工具定义，添加 tools 参数和强制工具调用
   if (tools && tools.length > 0) {
     body.tools = tools
+    body.tool_choice = 'required'  // 强制调用工具
   }
 
   const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
