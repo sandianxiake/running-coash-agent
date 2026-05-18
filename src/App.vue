@@ -876,10 +876,7 @@ async function sendMessage() {
           msg.content += event.data
         }
       } else if (event.type === 'tool_call') {
-        const msg = messages.value.find(m => m.id === assistantMsgId)
-        if (msg) {
-          msg.content += `\n\n🔧 调用工具: ${event.data.map((t: any) => t.name).join(', ')}`
-        }
+        // 静默处理工具调用，不显示给用户
       } else if (event.type === 'tool_result') {
         const msg = messages.value.find(m => m.id === assistantMsgId)
         if (msg && event.data.result?.message) {
@@ -889,12 +886,16 @@ async function sendMessage() {
         refreshData()
       } else if (event.type === 'done') {
         streamingMessageId.value = null
+        await nextTick()
+        scrollToBottom()
       } else if (event.type === 'error') {
         const msg = messages.value.find(m => m.id === assistantMsgId)
         if (msg) {
           msg.content = `出错了：${event.data}`
         }
         streamingMessageId.value = null
+        await nextTick()
+        scrollToBottom()
       }
     }
   } catch (error: any) {
@@ -1555,7 +1556,7 @@ function askQuestion(question: string) {
 .quick-questions {
   margin-bottom: 16px;
   padding: 12px;
-  padding-bottom: 70px;
+  padding-bottom: 180px;
   background: #f9f9f9;
   border-radius: 12px;
 }
