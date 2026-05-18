@@ -1445,42 +1445,6 @@ function askQuestion(question: string) {
   border-color: #4CAF50;
 }
 
-/* 语音按钮 */
-.voice-btn {
-  width: 44px;
-  height: 44px;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  font-size: 18px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.voice-btn:hover:not(:disabled) {
-  background: #e8e8e8;
-}
-
-.voice-btn.recording {
-  background: #ffebee;
-  border-color: #f44336;
-  animation: pulse 1s infinite;
-}
-
-.voice-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
 .send-btn {
   height: 44px;
   padding: 0 20px;
