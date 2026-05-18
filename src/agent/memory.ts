@@ -16,6 +16,28 @@ import type {
   UserPreferences
 } from '@/models/types'
 
+// 解析配速字符串，返回分钟数（支持多种格式：6:30、6'30''、6'30''/km、6:30/km）
+function parsePace(paceStr: string): number {
+  if (!paceStr) return 0
+  const cleaned = paceStr.replace('/km', '').trim()
+  
+  let min = 0, sec = 0
+  
+  if (cleaned.includes(':')) {
+    const parts = cleaned.split(':')
+    min = parseInt(parts[0]) || 0
+    sec = parseInt(parts[1]) || 0
+  } else if (cleaned.includes("'")) {
+    const parts = cleaned.split("'")
+    min = parseInt(parts[0]) || 0
+    sec = parseInt(parts[1].replace("''", '')) || 0
+  } else {
+    return parseFloat(cleaned) || 0
+  }
+  
+  return min + sec / 60
+}
+
 // ----------------------
 // 短期记忆（对话上下文）- 支持 localStorage 持久化
 // ----------------------
@@ -153,8 +175,7 @@ class LongTermMemoryStore implements LongTermMemory {
     
     // 计算平均配速
     const avgPace = this.runningRecords.reduce((sum, r) => {
-      const [min, sec] = r.pace.split(':').map(Number)
-      return sum + min + sec / 60
+      return sum + parsePace(r.pace)
     }, 0) / this.runningRecords.length
     
     const paceMin = Math.floor(avgPace)

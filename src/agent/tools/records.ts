@@ -9,6 +9,28 @@ import {
   addRunningRecord as storageAddRecord
 } from '@/store/storage'
 
+// 解析配速字符串，返回分钟数（支持多种格式：6:30、6'30''、6'30''/km、6:30/km）
+function parsePace(paceStr: string): number {
+  if (!paceStr) return 0
+  const cleaned = paceStr.replace('/km', '').trim()
+  
+  let min = 0, sec = 0
+  
+  if (cleaned.includes(':')) {
+    const parts = cleaned.split(':')
+    min = parseInt(parts[0]) || 0
+    sec = parseInt(parts[1]) || 0
+  } else if (cleaned.includes("'")) {
+    const parts = cleaned.split("'")
+    min = parseInt(parts[0]) || 0
+    sec = parseInt(parts[1].replace("''", '')) || 0
+  } else {
+    return parseFloat(cleaned) || 0
+  }
+  
+  return min + sec / 60
+}
+
 export const recordsTool: Tool = {
   name: 'get_running_records',
   description: '获取用户的跑步历史记录。返回按时间倒序排列的所有跑步记录，包含距离、配速、心率、感受等信息。',
@@ -172,10 +194,7 @@ export const analyzeRecordsTool: Tool = {
       : 0
     
     // 计算配速趋势
-    const paceValues = filteredRecords.map(r => {
-      const [min, sec] = r.pace.split(':').map(Number)
-      return min + sec / 60
-    })
+    const paceValues = filteredRecords.map(r => parsePace(r.pace))
     
     let paceTrend: '提升' | '下降' | '稳定' | '数据不足' = '数据不足'
     if (paceValues.length >= 2) {

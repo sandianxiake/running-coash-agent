@@ -36,6 +36,34 @@ const stats = ref({
   avgHeartRate: '-'
 })
 
+// 解析配速字符串，返回分钟数（支持多种格式：6:30、6'30''、6'30''/km、6:30/km）
+function parsePace(paceStr: string): number {
+  if (!paceStr) return 0
+  // 移除 /km 后缀
+  const cleaned = paceStr.replace('/km', '').trim()
+  
+  let min = 0, sec = 0
+  
+  // 格式1: mm:ss 或 mm:ss/km
+  if (cleaned.includes(':')) {
+    const parts = cleaned.split(':')
+    min = parseInt(parts[0]) || 0
+    sec = parseInt(parts[1]) || 0
+  }
+  // 格式2: mm'ss'' 或 mm'ss''
+  else if (cleaned.includes("'")) {
+    const parts = cleaned.split("'")
+    min = parseInt(parts[0]) || 0
+    sec = parseInt(parts[1].replace("''", '')) || 0
+  }
+  // 格式3: 直接是数字（分钟）
+  else {
+    return parseFloat(cleaned) || 0
+  }
+  
+  return min + sec / 60
+}
+
 // 当前流式消息
 const streamingMessageId = ref<string | null>(null)
 
@@ -502,8 +530,7 @@ function updatePaceChart() {
   }
   
   const paceData = recentRecords.map((r, i) => {
-    const [min, sec] = r.pace.split(':').map(Number)
-    return { index: i + 1, pace: min + sec / 60 }
+    return { index: i + 1, pace: parsePace(r.pace) }
   })
   
   paceChart.setOption({
