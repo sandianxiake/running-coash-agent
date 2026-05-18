@@ -45,6 +45,67 @@ const quickQuestions = ref<string[]>([])
 // 数据面板显示状态
 const showDataPanel = ref(false)
 
+// 手动录入跑步数据弹窗
+const showRecordForm = ref(false)
+const recordForm = ref({
+  runningDate: new Date().toISOString().split('T')[0],
+  distance: '',
+  duration: '',
+  pace: '',
+  avgHeartRate: '',
+  cadence: ''
+})
+
+// 检测是否需要录入跑步数据
+function needsRecordInput(text: string): boolean {
+  const keywords = ['录入', '添加', '保存', '记录', '新增']
+  return keywords.some(k => text.includes(k))
+}
+
+// 显示录入表单
+function openRecordForm() {
+  recordForm.value = {
+    runningDate: new Date().toISOString().split('T')[0],
+    distance: '',
+    duration: '',
+    pace: '',
+    avgHeartRate: '',
+    cadence: ''
+  }
+  showRecordForm.value = true
+}
+
+// 提交跑步记录
+function submitRecord() {
+  const { runningDate, distance, duration, pace, avgHeartRate, cadence } = recordForm.value
+  
+  if (!runningDate || !distance || !duration || !pace) {
+    showToast('请填写必填项：日期、距离、时长、配速')
+    return
+  }
+  
+  addRunningRecord({
+    id: `record_${Date.now()}`,
+    runningDate,
+    distance: parseFloat(distance),
+    duration: parseInt(duration),
+    pace,
+    avgHeartRate: avgHeartRate ? parseInt(avgHeartRate) : null,
+    cadence: cadence ? parseInt(cadence) : null,
+    createdAt: new Date().toISOString()
+  })
+  
+  showRecordForm.value = false
+  loadUserData()
+  
+  messages.value.push({
+    id: `record_${Date.now()}`,
+    role: 'assistant',
+    content: `✅ 已保存：\n📅 ${runningDate}\n🏃 距离：${distance} km\n⏱️ 时长：${duration} 分钟\n⚡ 配速：${pace}`,
+    timestamp: Date.now()
+  })
+}
+
 // 图片上传触发
 function triggerImageUpload() {
   imageInputRef.value?.click()
@@ -745,8 +806,13 @@ function refreshData() {
 // 发送消息（流式）
 async function sendMessage() {
   const text = inputText.value.trim()
-  // const hasImages = uploadedImages.value.length > 0
   if (!text || isLoading.value) return
+
+  // 检测是否需要录入跑步数据
+  if (needsRecordInput(text)) {
+    openRecordForm()
+    return
+  }
 
   inputText.value = ''
   isLoading.value = true
@@ -1024,6 +1090,48 @@ function askQuestion(question: string) {
       @change="handleImageSelect"
       style="display: none"
     />
+
+    <!-- 手动录入跑步数据弹窗 -->
+    <van-popup v-model:show="showRecordForm" position="bottom" round :style="{ height: 'auto' }">
+      <div class="record-form">
+        <div class="form-header">
+          <h3>录入跑步数据</h3>
+          <button class="close-btn" @click="showRecordForm = false">×</button>
+        </div>
+
+        <div class="form-item">
+          <label>日期 *</label>
+          <van-field v-model="recordForm.runningDate" type="date" placeholder="选择日期" />
+        </div>
+
+        <div class="form-item">
+          <label>距离（公里）*</label>
+          <van-field v-model="recordForm.distance" type="number" placeholder="如：10" />
+        </div>
+
+        <div class="form-item">
+          <label>时长（分钟）*</label>
+          <van-field v-model="recordForm.duration" type="number" placeholder="如：55" />
+        </div>
+
+        <div class="form-item">
+          <label>配速（如 6:15）*</label>
+          <van-field v-model="recordForm.pace" placeholder="格式：6:15" />
+        </div>
+
+        <div class="form-item">
+          <label>心率（次/分钟）</label>
+          <van-field v-model="recordForm.avgHeartRate" type="number" placeholder="如：145" />
+        </div>
+
+        <div class="form-item">
+          <label>步频（步/分钟）</label>
+          <van-field v-model="recordForm.cadence" type="number" placeholder="如：175" />
+        </div>
+
+        <van-button type="primary" block @click="submitRecord">保存</van-button>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -1371,6 +1479,42 @@ function askQuestion(question: string) {
 @keyframes typing {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+
+/* 录入表单样式 */
+.record-form {
+  padding: 20px;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.form-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+}
+
+.form-item {
+  margin-bottom: 12px;
+}
+
+.form-item label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
 }
 
 /* 快捷问题 */
