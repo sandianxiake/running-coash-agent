@@ -1556,7 +1556,7 @@ function askQuestion(question: string) {
 .quick-questions {
   margin-bottom: 16px;
   padding: 12px;
-  padding-bottom: 180px;
+  padding-bottom: 80px;
   background: #f9f9f9;
   border-radius: 12px;
 }
