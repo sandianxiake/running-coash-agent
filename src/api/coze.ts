@@ -111,8 +111,8 @@ export async function recognizeRunningData(imageDataUrl: string): Promise<Simple
         duration: raw.duration || '',
         distance: raw.distance || 0,
         pace: raw.pace || '',
-        avgHeartRate: raw.avgHeartRate || null,
-        cadence: raw.cadence || null
+        avgHeartRate: raw.avg_heart_rate || raw.avgHeartRate || null,
+        cadence: raw.avg_step_frequency || raw.cadence || null
       }
     } catch (e) {
       console.error('解析 JSON 失败:', e)
@@ -135,13 +135,20 @@ export function convertToRunningRecord(result: SimpleRunningData) {
     return 0
   }
 
+  // 标准化配速格式 (mm'ss'' 或 mm:ss -> mm:ss)
+  const normalizePace = (pace: string): string => {
+    if (!pace) return ''
+    // 替换 mm'ss'' 格式为 mm:ss
+    return pace.replace(/'/g, ':').replace(/"/g, '')
+  }
+
   return {
     id: `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     runningDate: result.date || new Date().toISOString().split('T')[0],
     createdAt: new Date().toISOString(),
     distance: result.distance,
     duration: parseDuration(result.duration),
-    pace: result.pace,
+    pace: normalizePace(result.pace),
     avgHeartRate: result.avgHeartRate,
     cadence: result.cadence,
     feeling: '一般',

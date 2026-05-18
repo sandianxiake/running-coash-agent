@@ -101,7 +101,7 @@ function submitRecord() {
   messages.value.push({
     id: `record_${Date.now()}`,
     role: 'assistant',
-    content: `✅ 已保存：\n📅 ${runningDate}\n🏃 距离：${distance} km\n⏱️ 时长：${duration} 分钟\n⚡ 配速：${pace}`,
+    content: `✅ 已保存：\n📅 ${runningDate}\n🏃 距离：${distance} km\n⏱️ 时长：${duration} 分钟\n⚡ 配速：${pace}\n❤️ 心率：${avgHeartRate} bpm\n🚶 步频：${cadence} 步/分钟`,
     timestamp: Date.now()
   })
 }
@@ -885,10 +885,10 @@ async function sendMessage() {
 
 // 清空对话
 function clearChat() {
-  messages.value = messages.value.filter(m => m.role === 'assistant')
+  messages.value = []
   agent.clearHistory()
   clearSessionMemory()
-  messages.value.unshift({
+  messages.value.push({
     id: 'welcome',
     role: 'assistant',
     content: '对话已清空。我们重新开始吧！有什么想问的？',
@@ -1528,6 +1528,7 @@ function askQuestion(question: string) {
 .quick-questions {
   margin-bottom: 16px;
   padding: 12px;
+  padding-bottom: 70px;
   background: #f9f9f9;
   border-radius: 12px;
 }
