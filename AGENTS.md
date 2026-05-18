@@ -36,9 +36,9 @@ running-coach-agent/
     │       ├── plan.ts     # 训练计划（localStorage）
     │       └── user.ts     # 用户资料（localStorage）
     ├── api/                # API 接口
-    │   ├── agent.ts        # 通义千问 API
-    │   ├── search.ts       # 搜索服务（内置+外部）
-    │   └── coze.ts         # 扣子工作流 API（图片识别）
+    │   ├── agent.ts        # DeepSeek API（Agent 流式对话）
+    │   ├── search.ts       # 搜索服务（内置知识库+DeepSeek）
+    │   └── coze.ts         # 火山方舟 API（图片识别）
     ├── store/              # 状态管理
     │   └── storage.ts      # localStorage 持久化
     └── views/              # 页面视图
@@ -50,14 +50,14 @@ running-coach-agent/
 - **Agent 核心**: `src/agent/core.ts` - 智能体核心逻辑（流式输出）
 - **工具模块**: `src/agent/tools/` - 包含 plan, rag, records, user 等工具
 - **持久化**: `src/store/storage.ts` - localStorage 统一存储
-- **搜索服务**: `src/api/search.ts` - 内置知识库 + 通义千问 API
+- **搜索服务**: `src/api/search.ts` - 内置知识库 + DeepSeek API
 
 ## 运行与预览
 - **开发预览**: `bash scripts/coze-preview-run.sh` 或 `pnpm exec vite --host 0.0.0.0 --port 5000`
 - **生产构建**: `pnpm vite build`
 - **部署运行**: `serve dist -p 5000 -s` (静态服务)
 
-## Coze 平台配置
+## 平台配置
 
 ### 目录结构
 ```
@@ -75,9 +75,15 @@ running-coach-agent/
 
 ### 环境变量（部署时）
 ```
-VITE_DEEPSEEK_API_KEY = sk-9efc53fac08d4369b3d26b1ae37eb7ea
-VITE_COZE_TOKEN = pat_xxxxxxxxxxxx  # 扣子个人访问令牌
+VITE_DEEPSEEK_API_KEY = sk-xxxxxxxxxxxx  # DeepSeek API Key
+VITE_ARK_API_KEY = ark-xxxxxxxxxxxx      # 火山方舟 API Key
 ```
+
+### 火山引擎代理函数
+- 函数名称: `coze_proxy`（已改名）
+- 运行环境: Node.js 20.x
+- API 路径: `/api/v3/responses`
+- 用途: 调用火山方舟豆包视觉模型识别跑步截图
 
 ### 预览脚本
 - `scripts/coze-preview-build.sh`: 安装依赖
@@ -95,8 +101,8 @@ VITE_COZE_TOKEN = pat_xxxxxxxxxxxx  # 扣子个人访问令牌
 - 数据统计功能
 
 ### 2. 外部知识 API
-- 内置跑步知识库（10个主题）
-- 通义千问 API 智能问答
+- 内置跑步知识库（24个主题）
+- DeepSeek API 智能问答
 - 智能降级机制
 
 ### 3. 流式输出
@@ -110,12 +116,11 @@ VITE_COZE_TOKEN = pat_xxxxxxxxxxxx  # 扣子个人访问令牌
 - 训练计划进度饼图
 - 数据统计卡片
 
-### 5. 扣子工作流图片识别
+### 5. 火山方舟图片识别
 - 上传跑步截图，自动识别跑步数据
-- 调用扣子工作流 `img_reg` (workflow_id: 7639997536598278163)
+- 调用火山方舟豆包视觉理解模型
 - 支持多图批量识别
 - 识别结果自动存入 localStorage
-- **需要配置**: 用户需在 localStorage 中设置 `coze_token`（扣子个人访问令牌）
 
 ## 用户偏好与长期约束
 - 使用 pnpm 管理依赖，禁止 npm 或 yarn
@@ -128,4 +133,5 @@ VITE_COZE_TOKEN = pat_xxxxxxxxxxxx  # 扣子个人访问令牌
 - 确保 node_modules 已安装后再执行构建
 - 预览脚本基于脚本位置推导项目目录，无需额外 workdir
 - 构建脚本会自动安装依赖并执行 Vite build
-- 配置 VITE_QWEN_API_KEY 环境变量以启用 AI 功能
+- 配置 VITE_DEEPSEEK_API_KEY 环境变量以启用 Agent 对话功能
+- 配置 VITE_ARK_API_KEY 环境变量以启用图片识别功能
