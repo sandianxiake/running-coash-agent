@@ -79,8 +79,8 @@ function openRecordForm() {
 function submitRecord() {
   const { runningDate, distance, duration, pace, avgHeartRate, cadence } = recordForm.value
   
-  if (!runningDate || !distance || !duration || !pace) {
-    showToast('请填写必填项：日期、距离、时长、配速')
+  if (!runningDate || !distance || !duration || !pace || !avgHeartRate || !cadence) {
+    showToast('请填写所有必填项：日期、距离、时长、配速、心率、步频')
     return
   }
   
@@ -90,8 +90,8 @@ function submitRecord() {
     distance: parseFloat(distance),
     duration: parseInt(duration),
     pace,
-    avgHeartRate: avgHeartRate ? parseInt(avgHeartRate) : null,
-    cadence: cadence ? parseInt(cadence) : null,
+    avgHeartRate: parseInt(avgHeartRate),
+    cadence: parseInt(cadence),
     createdAt: new Date().toISOString()
   })
   
@@ -1034,6 +1034,13 @@ function askQuestion(question: string) {
           📷
         </button>
       </div>
+
+      <!-- 手动录入按钮 -->
+      <div class="image-upload">
+        <button class="image-btn" @click="showRecordForm = true" :disabled="isLoading" title="手动录入跑步数据">
+          ✏️
+        </button>
+      </div>
       
       <!-- 识别全部按钮 -->
       <button 
@@ -1120,12 +1127,12 @@ function askQuestion(question: string) {
         </div>
 
         <div class="form-item">
-          <label>心率（次/分钟）</label>
+          <label>心率（次/分钟）*</label>
           <van-field v-model="recordForm.avgHeartRate" type="number" placeholder="如：145" />
         </div>
 
         <div class="form-item">
-          <label>步频（步/分钟）</label>
+          <label>步频（步/分钟）*</label>
           <van-field v-model="recordForm.cadence" type="number" placeholder="如：175" />
         </div>
 
