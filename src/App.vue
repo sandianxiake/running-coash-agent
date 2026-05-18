@@ -227,8 +227,13 @@ watch(showDataPanel, async (newVal) => {
     setTimeout(() => {
       // 先加载最新数据
       loadUserData()
-      // 初始化图表
+      // 初始化图表（如果还没初始化）
       initCharts()
+      // 更新所有图表数据
+      updateWeeklyChart()
+      updatePaceChart()
+      updatePlanChart()
+      updateRadarChart()
       // 触发图表 resize
       if (weeklyChart) weeklyChart.resize()
       if (paceChart) paceChart.resize()
