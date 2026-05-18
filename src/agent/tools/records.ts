@@ -38,7 +38,7 @@ export const recordsTool: Tool = {
 
 export const addRecordTool: Tool = {
   name: 'add_running_record',
-  description: '添加一条新的跑步记录。当用户提供跑步数据时使用，记录距离、时间、配速、心率、步频、步幅、跑步感受等信息。如果用户没有提供步频和步幅，可以根据配速和跑步经验估算一个合理值。',
+  description: '添加一条新的跑步记录。当用户提供跑步数据时必须使用此工具保存数据。如果用户没有提供某些字段，可以根据跑步常识估算合理值（心率估算150-160，步频估算170-180）。',
   parameters: {
     type: 'object',
     properties: {
@@ -72,18 +72,18 @@ export const addRecordTool: Tool = {
       },
       runningDate: {
         type: 'string',
-        description: '跑步的实际日期，格式YYYY-MM-DD，如 "2024-05-04"（可选，默认使用今天）'
+        description: '跑步日期（YYYY-MM-DD格式），必填'
       },
       cadence: {
         type: 'number',
-        description: '平均步频（步/分钟），如180'
+        description: '平均步频（步/分钟）'
       },
       stride: {
         type: 'number',
         description: '平均步幅（厘米）'
       }
     },
-    required: ['distance', 'duration', 'pace']
+    required: ['distance', 'duration', 'pace', 'runningDate', 'avgHeartRate', 'cadence']
   },
   execute: async (args): Promise<ToolExecutionResult> => {
     const newRecord: RunningRecord = {
