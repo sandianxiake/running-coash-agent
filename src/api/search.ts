@@ -645,9 +645,9 @@ class WebSearchService {
   }
 
   // 混合搜索（关键词 + 语义）
-  async searchHybrid(query: string, topK: number = 2): Promise<string[]> {
+  async searchHybrid(query: string, topK: number = 1): Promise<string[]> {
     // 关键词搜索结果
-    const keywordResults = this.searchByKeyword(query, topK * 2)
+    const keywordResults = this.searchByKeyword(query, topK * 3)
     
     // 语义搜索结果（使用 Chat API）
     const semanticResults = await this.searchBySemantic(query, topK * 2)
@@ -684,7 +684,7 @@ class WebSearchService {
   }
 
   // 搜索内置知识库（兼容旧接口）
-  async searchBuiltInKnowledge(query: string, topK: number = 2): Promise<string[]> {
+  async searchBuiltInKnowledge(query: string, topK: number = 1): Promise<string[]> {
     return this.searchHybrid(query, topK)
   }
 
@@ -740,7 +740,7 @@ class WebSearchService {
   }
 
   // 统一搜索接口（智能降级）
-  async search(query: string, topK: number = 2): Promise<{
+  async search(query: string, topK: number = 1): Promise<{
     builtInKnowledge: string[];
     externalResults?: { summary: string }[];
     summary?: string;
