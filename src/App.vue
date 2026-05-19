@@ -897,6 +897,7 @@ async function sendMessage() {
       content: text,
       timestamp: Date.now()
     })
+    inputText.value = ''
     scrollToBottom()
     openRecordForm()
     return
