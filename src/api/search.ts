@@ -645,7 +645,7 @@ class WebSearchService {
   }
 
   // 混合搜索（关键词 + 语义）
-  async searchHybrid(query: string, topK: number = 3): Promise<string[]> {
+  async searchHybrid(query: string, topK: number = 2): Promise<string[]> {
     // 关键词搜索结果
     const keywordResults = this.searchByKeyword(query, topK * 2)
     
@@ -684,7 +684,7 @@ class WebSearchService {
   }
 
   // 搜索内置知识库（兼容旧接口）
-  async searchBuiltInKnowledge(query: string, topK: number = 3): Promise<string[]> {
+  async searchBuiltInKnowledge(query: string, topK: number = 2): Promise<string[]> {
     return this.searchHybrid(query, topK)
   }
 
@@ -729,12 +729,9 @@ class WebSearchService {
         return { results: [] }
       }
 
+      // 只保留 summary，去掉重复的 results
       return {
-        summary: answer,
-        results: [{
-          title: 'AI 专业回答',
-          snippet: answer
-        }]
+        summary: answer
       }
     } catch (e) {
       console.warn('External search failed:', e)
@@ -743,9 +740,9 @@ class WebSearchService {
   }
 
   // 统一搜索接口（智能降级）
-  async search(query: string, topK: number = 3): Promise<{
+  async search(query: string, topK: number = 2): Promise<{
     builtInKnowledge: string[];
-    externalResults?: { title: string; url?: string; snippet: string }[];
+    externalResults?: { summary: string }[];
     summary?: string;
     source: 'internal' | 'external' | 'hybrid';
   }> {

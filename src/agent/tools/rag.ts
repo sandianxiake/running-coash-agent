@@ -17,13 +17,13 @@ export const ragTool: Tool = {
       },
       top_k: {
         type: 'number',
-        description: '返回最相关的知识条目数量，默认3条'
+        description: '返回最相关的知识条目数量，默认2条'
       }
     },
     required: ['query']
   },
   execute: async (args): Promise<ToolExecutionResult> => {
-    const { query, top_k = 3 } = args
+    const { query, top_k = 2 } = args
 
     try {
       const searchResult = await webSearchService.search(query, top_k)
