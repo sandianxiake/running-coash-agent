@@ -648,7 +648,7 @@ function updatePlanChart() {
       title: {
         text: '训练计划进度',
         left: 'center',
-        top: 0,
+        top: 10,
         textStyle: { fontSize: 14, fontWeight: 'normal' }
       },
       graphic: [{
@@ -670,7 +670,7 @@ function updatePlanChart() {
     title: {
       text: `训练计划进度（第${currentWeek}/${plan.totalWeeks}周）`,
       left: 'center',
-      top: 0,
+      top: 10,
       textStyle: { fontSize: 14, fontWeight: 'normal' }
     },
     tooltip: {
@@ -678,9 +678,10 @@ function updatePlanChart() {
       formatter: '{b}: {c}km ({d}%)'
     },
     legend: {
-      bottom: 60,
-      left: 'center',
-      itemGap: 40,
+      right: 10,
+      top: 'center',
+      orient: 'vertical',
+      itemGap: 15,
       textStyle: { fontSize: 10 }
     },
     series: [{
