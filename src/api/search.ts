@@ -221,7 +221,8 @@ const RUNNING_KNOWLEDGE = [
 • 适合：正常足弓、大体重、初跑者
 • 推荐场景：日常慢跑、长距离训练
 • 优点：保护关节、减少冲击力
-• 代表：Hoka Clifton、Nike Vomero、Saucony Triumph`
+• 国际代表：Hoka Clifton、Nike Vomero、Saucony Triumph
+• 国产代表：必迈惊碳、李宁超轻、安踏创霸`
   },
   {
     id: 14,
@@ -232,7 +233,8 @@ const RUNNING_KNOWLEDGE = [
 • 适合：扁平足、低足弓、过度内旋跑者
 • 优点：矫正跑姿、保护膝盖
 • 注意：正常足弓不需要支撑型
-• 代表：Asics Kayano、Brooks Adrenaline`
+• 国际代表：Asics Kayano、Brooks Adrenaline
+• 国产代表：361度Spire、特步稳定跑鞋`
   },
   {
     id: 15,
@@ -243,7 +245,8 @@ const RUNNING_KNOWLEDGE = [
 • 适合：进阶跑者、追求速度、比赛日
 • 优点：推进力强、回弹好、省力
 • 注意：需要一定腿部力量
-• 代表：Nike Vaporfly、Adidas Adios Pro`
+• 国际代表：Nike Vaporfly、Adidas Adios Pro
+• 国产代表：李宁飞电、特步160X、安踏C202 GT`
   },
   {
     id: 16,
