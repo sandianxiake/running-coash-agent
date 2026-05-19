@@ -1173,56 +1173,56 @@ function askQuestion(question: string) {
     <!-- 图片识别 Loading -->
     <van-overlay :show="isImageLoading" :z-index="999">
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-        <van-loading type="spinner" size="48px" color="#07c160">识别中...</van-loading>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+      <van-loading type="spinner" size="48px" color="#07c160" />
+      <span style="color: white; font-size: 16px;">识别中...</span>
+    </div>
       </div>
     </van-overlay>
 
 <!-- 用户资料弹窗 -->
-    <van-popup v-model:show="showProfilePopup" position="bottom" round :style="{ height: 'auto', maxHeight: '85vh' }" :close-on-click-overlay="false">
+    <van-popup v-model:show="showProfilePopup" position="bottom" round :style="{ height: 'auto', maxHeight: '90vh' }" :close-on-click-overlay="false">
       <div class="profile-form">
         <div class="form-header">
           <h3>完善个人资料</h3>
         </div>
-        <p class="form-tip">为了给你更精准的训练建议，请先完善信息</p>
 
-        <div class="form-row-2">
-          <div class="form-item">
-            <label>昵称 *</label>
-            <van-field v-model="profileForm.nickname" placeholder="昵称" size="small" />
-          </div>
-          <div class="form-item">
-            <label>性别 *</label>
-            <van-radio-group v-model="profileForm.gender" direction="horizontal" size="small">
-              <van-radio name="男" shape="square">男</van-radio>
-              <van-radio name="女" shape="square">女</van-radio>
-            </van-radio-group>
-          </div>
+        <div class="form-item">
+          <label>昵称 *</label>
+          <van-field v-model="profileForm.nickname" placeholder="昵称" size="small" />
         </div>
 
-        <div class="form-row-3">
-          <div class="form-item">
-            <label>年龄 *</label>
-            <van-field v-model.number="profileForm.age" type="number" placeholder="岁" size="small" />
-          </div>
-          <div class="form-item">
-            <label>身高 *</label>
-            <van-field v-model.number="profileForm.height" type="number" placeholder="cm" size="small" />
-          </div>
-          <div class="form-item">
-            <label>体重 *</label>
-            <van-field v-model.number="profileForm.weight" type="number" placeholder="kg" size="small" />
-          </div>
+        <div class="form-item">
+          <label>性别 *</label>
+          <van-radio-group v-model="profileForm.gender" direction="horizontal" size="small">
+            <van-radio name="男" shape="square">男</van-radio>
+            <van-radio name="女" shape="square">女</van-radio>
+          </van-radio-group>
         </div>
 
-        <div class="form-row-2">
-          <div class="form-item">
-            <label>能力水平 *</label>
-            <van-field v-model="profileForm.abilityLevel" is-link readonly placeholder="选择" size="small" @click="showAbilityPicker = true" />
-          </div>
-          <div class="form-item">
-            <label>伤病史</label>
-            <van-field v-model="profileForm.injuryHistory" placeholder="无" size="small" />
-          </div>
+        <div class="form-item">
+          <label>年龄 *</label>
+          <van-field v-model.number="profileForm.age" type="number" placeholder="岁" size="small" />
+        </div>
+
+        <div class="form-item">
+          <label>身高 *</label>
+          <van-field v-model.number="profileForm.height" type="number" placeholder="cm" size="small" />
+        </div>
+
+        <div class="form-item">
+          <label>体重 *</label>
+          <van-field v-model.number="profileForm.weight" type="number" placeholder="kg" size="small" />
+        </div>
+
+        <div class="form-item">
+          <label>能力水平 *</label>
+          <van-field v-model="profileForm.abilityLevel" is-link readonly placeholder="选择" size="small" @click="showAbilityPicker = true" />
+        </div>
+
+        <div class="form-item">
+          <label>伤病史</label>
+          <van-field v-model="profileForm.injuryHistory" placeholder="无" size="small" />
         </div>
 
         <van-action-sheet v-model:show="showAbilityPicker" :actions="abilityLevels.map(name => ({ name }))" @select="(action) => { profileForm.abilityLevel = action.name; showAbilityPicker = false }" />
@@ -1634,22 +1634,15 @@ function askQuestion(question: string) {
 .profile-form .form-tip {
   color: #969799;
   font-size: 13px;
-  margin: -8px 0 12px;
+  margin: -4px 0 12px;
 }
-.profile-form .form-row-2,
-.profile-form .form-row-3 {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.profile-form .form-row-2 .form-item,
-.profile-form .form-row-3 .form-item {
-  flex: 1;
-  margin-bottom: 0;
+.profile-form .form-item {
+  margin-bottom: 10px;
 }
 .profile-form .form-item label {
   font-size: 13px;
   margin-bottom: 4px;
+  display: block;
 }
 .record-form .form-header {
   margin-bottom: 12px;
