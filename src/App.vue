@@ -5,7 +5,21 @@ import { generateQuickQuestions } from './api/agent'
 import { recognizeRunningData, convertToRunningRecord } from './api/coze'
 import { addRunningRecord } from './store/storage'
 import * as echarts from 'echarts'
-import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory } from './store/storage'
+import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory, getUserProfile, setUserProfile, setUserPreferences } from './store/storage'
+
+// 用户资料弹窗
+const showProfilePopup = ref(false)
+const profileForm = ref({
+  nickname: '',
+  gender: '男' as '男' | '女',
+  age: 30,
+  height: 170,
+  weight: 65,
+  abilityLevel: '初学者',
+  injuryHistory: ''
+})
+const abilityLevels = ['初学者', '入门', '中级', '高级']
+const showAbilityPicker = ref(false)
 
 const messages = ref<Message[]>([])
 const inputText = ref('')
@@ -103,6 +117,35 @@ function openRecordForm() {
   showRecordForm.value = true
 }
 
+// 保存用户资料
+function saveProfile() {
+  const { nickname, gender, age, height, weight, abilityLevel, injuryHistory } = profileForm.value
+  
+  if (!nickname) {
+    showToast('请填写昵称')
+    return
+  }
+  
+  setUserProfile({
+    nickname,
+    gender,
+    age,
+    height,
+    weight,
+    abilityTags: [abilityLevel]
+  })
+  
+  setUserPreferences({
+    preferredPace: '',
+    availableDays: ['六', '日'],
+    injuryHistory: injuryHistory ? [injuryHistory] : [],
+    preferredTrainingStyle: 'balanced'
+  })
+  
+  showProfilePopup.value = false
+  showToast('资料已保存')
+}
+
 // 提交跑步记录
 function submitRecord() {
   const { runningDate, distance, duration, pace, avgHeartRate, cadence } = recordForm.value
@@ -126,10 +169,17 @@ function submitRecord() {
   showRecordForm.value = false
   loadUserData()
   
-  messages.value.push({
+  // 获取星期几
+function getWeekday(dateStr: string): string {
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const date = new Date(dateStr)
+  return weekdays[date.getDay()]
+}
+
+messages.value.push({
     id: `record_${Date.now()}`,
     role: 'assistant',
-    content: `✅ 已保存：\n📅 ${runningDate}\n🏃 距离：${distance} km\n⏱️ 时长：${duration} 分钟\n⚡ 配速：${pace}\n❤️ 心率：${avgHeartRate} bpm\n🚶 步频：${cadence} 步/分钟`,
+    content: `✅ 已保存：\n📅 ${runningDate} ${getWeekday(runningDate)}\n🏃 距离：${distance} km\n⏱️ 时长：${duration} 分钟\n⚡ 配速：${pace}\n❤️ 心率：${avgHeartRate} bpm\n🚶 步频：${cadence} 步/分钟`,
     timestamp: Date.now()
   })
 }
@@ -190,7 +240,7 @@ async function recognizeImage(imageId: string) {
       messages.value.push({
         id: `recognize_${Date.now()}`,
         role: 'assistant',
-        content: `✅ 识别成功！已添加跑步记录：\n📅 ${result.date}\n🏃 距离：${result.distance} km\n⏱️ 时长：${result.duration}\n⚡ 配速：${result.pace}\n❤️ 心率：${result.avgHeartRate || '-'} bpm\n🚶 步频：${result.cadence || '-'} 步/分钟`,
+        content: `✅ 识别成功！已添加跑步记录：\n📅 ${result.date} ${getWeekday(result.date)}\n🏃 距离：${result.distance} km\n⏱️ 时长：${result.duration}\n⚡ 配速：${result.pace}\n❤️ 心率：${result.avgHeartRate || '-'} bpm\n🚶 步频：${result.cadence || '-'} 步/分钟`,
         timestamp: Date.now()
       })
       
@@ -284,6 +334,12 @@ onMounted(async () => {
 
   // 加载用户数据
   loadUserData()
+  
+  // 检测用户资料，未完善则弹出
+  const userProfile = getUserProfile()
+  if (!userProfile || !userProfile.nickname) {
+    showProfilePopup.value = true
+  }
   
   // AI 生成快捷问题
   try {
@@ -1126,6 +1182,60 @@ function askQuestion(question: string) {
       style="display: none"
     />
 
+    <!-- 用户资料弹窗 -->
+    <van-popup v-model:show="showProfilePopup" position="bottom" round :style="{ height: 'auto' }" :close-on-click-overlay="false">
+      <div class="record-form">
+        <div class="form-header">
+          <h3>完善个人资料</h3>
+        </div>
+        <p class="form-tip">为了给你更精准的训练建议，请先完善以下信息：</p>
+
+        <div class="form-item">
+          <label>昵称 *</label>
+          <van-field v-model="profileForm.nickname" placeholder="给自己起个名字" />
+        </div>
+
+        <div class="form-item">
+          <label>性别 *</label>
+          <van-radio-group v-model="profileForm.gender" direction="horizontal">
+            <van-radio name="男">男</van-radio>
+            <van-radio name="女">女</van-radio>
+          </van-radio-group>
+        </div>
+
+        <div class="form-row">
+          <div class="form-item">
+            <label>年龄 *</label>
+            <van-field v-model.number="profileForm.age" type="number" placeholder="岁" />
+          </div>
+          <div class="form-item">
+            <label>身高 *</label>
+            <van-field v-model.number="profileForm.height" type="number" placeholder="cm" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-item">
+            <label>体重 *</label>
+            <van-field v-model.number="profileForm.weight" type="number" placeholder="kg" />
+          </div>
+          <div class="form-item">
+            <label>能力水平 *</label>
+            <van-field v-model="profileForm.abilityLevel" is-link readonly placeholder="选择能力水平" @click="showAbilityPicker = true" />
+          </div>
+        </div>
+
+        <div class="form-item">
+          <label>伤病史</label>
+          <van-field v-model="profileForm.injuryHistory" type="textarea" rows="2" placeholder="如有伤病史请填写，如：右膝旧伤" />
+        </div>
+
+        <van-action-sheet v-model:show="showAbilityPicker" :actions="abilityLevels.map(name => ({ name }))" @select="(action) => { profileForm.abilityLevel = action.name; showAbilityPicker = false }" />
+
+        <button class="submit-btn" @click="saveProfile">保存资料</button>
+      </div>
+    </van-popup>
+
     <!-- 手动录入跑步数据弹窗 -->
     <van-popup v-model:show="showRecordForm" position="bottom" round :style="{ height: 'auto' }">
       <div class="record-form">
@@ -1519,6 +1629,12 @@ function askQuestion(question: string) {
 /* 录入表单样式 */
 .record-form {
   padding: 20px;
+}
+
+.form-tip {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 16px;
 }
 
 .form-header {
