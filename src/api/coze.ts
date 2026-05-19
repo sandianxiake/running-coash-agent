@@ -17,6 +17,7 @@ const SYSTEM_PROMPT = `你是一个专业的跑步数据提取助手。请从截
 | pace | 平均配速 | M'S''/km |
 | avgHeartRate | 平均心率(次/分钟) | 纯数字 |
 | cadence | 平均步频(步/分钟) | 纯数字 |
+| avg_stride | 平均步幅(厘米) | 纯数字 |
 
 ## 输出要求
 1. 如果某字段在图片中找不到，标记为 null
@@ -30,7 +31,8 @@ const SYSTEM_PROMPT = `你是一个专业的跑步数据提取助手。请从截
   "distance": 0,
   "pace": "",
   "avgHeartRate": null,
-  "cadence": null
+  "cadence": null,
+  "avg_stride": null
 }`
 
 // 跑步数据识别结果接口
@@ -41,6 +43,7 @@ export interface SimpleRunningData {
   pace: string
   avgHeartRate: number | null
   cadence: number | null
+  avgStride: number | null
 }
 
 // 提取真正的 base64 部分（去掉 data:image/xxx;base64, 前缀）
@@ -112,7 +115,8 @@ export async function recognizeRunningData(imageDataUrl: string): Promise<Simple
         distance: raw.distance || 0,
         pace: raw.pace || '',
         avgHeartRate: raw.avg_heart_rate || raw.avgHeartRate || null,
-        cadence: raw.avg_step_frequency || raw.cadence || null
+        cadence: raw.avg_step_frequency || raw.cadence || null,
+        avgStride: raw.avg_stride || raw.avgStride || null
       }
     } catch (e) {
       console.error('解析 JSON 失败:', e)
@@ -151,6 +155,7 @@ export function convertToRunningRecord(result: SimpleRunningData) {
     pace: normalizePace(result.pace),
     avgHeartRate: result.avgHeartRate,
     cadence: result.cadence,
+    avgStride: result.avgStride,
     feeling: '一般',
   }
 }

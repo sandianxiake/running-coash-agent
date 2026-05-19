@@ -119,8 +119,15 @@ VITE_ARK_API_KEY = ark-xxxxxxxxxxxx      # 火山方舟 API Key
 ### 5. 火山方舟图片识别
 - 上传跑步截图，自动识别跑步数据
 - 调用火山方舟豆包视觉理解模型
-- 支持多图批量识别
+- 支持单张图片识别
+- 识别字段：日期、距离、时长、配速、心率、步频、步幅
 - 识别结果自动存入 localStorage
+
+### 6. 跑步数据字段
+- **必填**: 日期(runningDate)、距离(distance)、时长(duration)、配速(pace)
+- **选填**: 心率(avgHeartRate)、步频(cadence)、步幅(stride)、感受(feeling)
+- 配速格式兼容 mm:ss 和 mm'ss''
+- 步幅单位为厘米(cm)
 
 ## 用户偏好与长期约束
 - 使用 pnpm 管理依赖，禁止 npm 或 yarn
@@ -135,3 +142,4 @@ VITE_ARK_API_KEY = ark-xxxxxxxxxxxx      # 火山方舟 API Key
 - 构建脚本会自动安装依赖并执行 Vite build
 - 配置 VITE_DEEPSEEK_API_KEY 环境变量以启用 Agent 对话功能
 - 配置 VITE_ARK_API_KEY 环境变量以启用图片识别功能
+- 六边形战士显示6项：总时长、总距离、配速、心率、步频、步幅（已移除最大摄氧量）

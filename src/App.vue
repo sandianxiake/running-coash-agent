@@ -96,7 +96,8 @@ const recordForm = ref({
   duration: '',
   pace: '',
   avgHeartRate: '',
-  cadence: ''
+  cadence: '',
+  avgStride: ''
 })
 
 // 检测是否需要录入跑步数据
@@ -113,7 +114,8 @@ function openRecordForm() {
     duration: '',
     pace: '',
     avgHeartRate: '',
-    cadence: ''
+    cadence: '',
+    avgStride: ''
   }
   showRecordForm.value = true
 }
@@ -149,7 +151,7 @@ function saveProfile() {
 
 // 提交跑步记录
 function submitRecord() {
-  const { runningDate, distance, duration, pace, avgHeartRate, cadence } = recordForm.value
+  const { runningDate, distance, duration, pace, avgHeartRate, cadence, avgStride } = recordForm.value
   
   if (!runningDate || !distance || !duration || !pace || !avgHeartRate || !cadence) {
     showToast('请填写所有必填项：日期、距离、时长、配速、心率、步频')
@@ -164,6 +166,7 @@ function submitRecord() {
     pace,
     avgHeartRate: parseInt(avgHeartRate),
     cadence: parseInt(cadence),
+    stride: avgStride ? parseFloat(avgStride) : undefined,
     createdAt: new Date().toISOString()
   })
   
@@ -746,14 +749,8 @@ function updateRadarChart() {
     ? recordsWithCadence.reduce((sum, r) => sum + (r.cadence || 0), 0) / recordsWithCadence.length
     : 0
   
-  // 7. 最大摄氧量（如果有，默认40）
-  const recordsWithVO2 = records.filter(r => r.vo2Max && r.vo2Max > 0)
-  const avgVO2Max = recordsWithVO2.length > 0
-    ? recordsWithVO2.reduce((sum, r) => sum + (r.vo2Max || 0), 0) / recordsWithVO2.length
-    : 40
-  
   // 计算归一化值（0-100）
-  // 假设合理范围：时间0-1000分钟，距离0-500公里，配速3-10分钟/公里，心率120-180，步幅50-150厘米，步频140-200，摄氧量25-60
+  // 假设合理范围：时间0-1000分钟，距离0-500公里，配速3-10分钟/公里，心率120-180，步幅50-150厘米，步频140-200
   const normalize = (value: number, min: number, max: number, invert: boolean = false) => {
     if (value === 0) return 0
     let normalized = ((value - min) / (max - min)) * 100
@@ -768,8 +765,7 @@ function updateRadarChart() {
     normalize(avgPace, 3, 10, true),           // 配速（越小越好，所以 invert）
     normalize(avgHeartRate, 120, 180),         // 心率（适中最好，这里简化处理）
     normalize(avgStride, 50, 150),             // 步幅（厘米）
-    normalize(avgCadence, 140, 200),            // 步频
-    normalize(avgVO2Max, 25, 60)                // 最大摄氧量
+    normalize(avgCadence, 140, 200)             // 步频
   ]
   
   // 准备各维度的原始数据（用于 tooltip）
@@ -788,8 +784,7 @@ function updateRadarChart() {
     { label: '配速', value: avgPace, format: (v: number) => v > 0 ? `${Math.floor(v)}′${String(Math.round((v % 1) * 60)).padStart(2, '0')}″/km` : '-' },
     { label: '心率', value: avgHeartRate, format: (v: number) => v > 0 ? `${Math.round(v)}bpm` : '-' },
     { label: '步幅', value: avgStride, format: (v: number) => v > 0 ? `${Math.round(v)}cm` : '-' },
-    { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Math.round(v)}spm` : '-' },
-    { label: '摄氧量', value: avgVO2Max, format: (v: number) => v > 0 ? `${Math.round(v)}ml/kg/min` : '-' }
+    { label: '步频', value: avgCadence, format: (v: number) => v > 0 ? `${Math.round(v)}spm` : '-' }
   ]
 
   radarChart.setOption({
@@ -802,7 +797,7 @@ function updateRadarChart() {
       padding: [10, 15],
       textStyle: { color: '#333', fontSize: 12 },
       formatter: () => {
-        // 显示所有7个维度的数据
+        // 显示所有6个维度的数据
         let html = '<div style="min-width:130px">'
         metricsData.forEach((m) => {
           html += `<div style="margin:4px 0">
@@ -821,8 +816,7 @@ function updateRadarChart() {
         { name: '配速', max: 100 },
         { name: '心率', max: 100 },
         { name: '步幅', max: 100 },
-        { name: '步频', max: 100 },
-        { name: '摄氧量', max: 100 }
+        { name: '步频', max: 100 }
       ],
       center: ['50%', '55%'],
       shape: 'polygon',
@@ -1285,6 +1279,13 @@ function askQuestion(question: string) {
           <div class="form-item">
             <label>步频(spm) *</label>
             <van-field v-model.number="recordForm.cadence" type="number" placeholder="步/分钟" size="small" />
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-item">
+            <label>步幅(cm) *</label>
+            <van-field v-model.number="recordForm.avgStride" type="number" placeholder="厘米" size="small" />
           </div>
         </div>
 
