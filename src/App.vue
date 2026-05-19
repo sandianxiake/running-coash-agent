@@ -1122,14 +1122,14 @@ function askQuestion(question: string) {
     <div class="input-area">
       <!-- 图片上传按钮 -->
       <div class="image-upload">
-        <button class="image-btn" @click="triggerImageUpload" :disabled="isLoading" title="上传跑步截图">
+        <button class="image-btn" @click="triggerImageUpload" :disabled="uploadedImages.length > 0" title="上传跑步截图">
           📷
         </button>
       </div>
 
       <!-- 手动录入按钮 -->
       <div class="image-upload">
-        <button class="image-btn" @click="showRecordForm = true" :disabled="isLoading" title="手动录入跑步数据">
+        <button class="image-btn" @click="showRecordForm = true" :disabled="uploadedImages.length > 0" title="手动录入跑步数据">
           ✏️
         </button>
       </div>
@@ -1140,7 +1140,7 @@ function askQuestion(question: string) {
         v-model="inputText"
         placeholder="输入你的问题..."
         @keydown.enter.exact.prevent="sendMessage"
-        :disabled="isLoading"
+        :disabled="uploadedImages.length > 0"
         rows="2"
       ></textarea>
       
