@@ -927,6 +927,8 @@ async function sendMessage() {
         const msg = messages.value.find(m => m.id === assistantMsgId)
         if (msg) {
           msg.content += event.data
+          await nextTick()
+          scrollToBottom()
         }
       } else if (event.type === 'tool_call') {
         // 静默处理工具调用，不显示给用户
@@ -1954,7 +1956,7 @@ function askQuestion(question: string) {
 /* 图片预览区域优化 */
 .image-preview {
   position: fixed;
-  bottom: 62px;
+  bottom: 85px;
   left: 0;
   right: 0;
   display: flex;
