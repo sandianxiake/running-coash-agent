@@ -183,7 +183,7 @@ function getWeekday(dateStr: string): string {
 messages.value.push({
     id: `record_${Date.now()}`,
     role: 'assistant',
-    content: `✅ 已保存：\n📅 日期：${runningDate}\n🏃 距离：${distance} km\n⏱️ 时长：${duration} 分钟\n⚡ 配速：${pace}\n❤️ 心率：${avgHeartRate} bpm\n🚶 步频：${cadence} 步/分钟`,
+    content: `✅ 已保存：\n📅 日期：${runningDate}\n🏃 距离：${distance} km\n⏱️ 时长：${duration} 分钟\n⚡ 配速：${pace}\n❤️ 心率：${avgHeartRate} bpm\n🚶 步频：${cadence} 步/分钟\n📏 步幅：${avgStride || '-'} cm`,
     timestamp: Date.now()
   })
 }
@@ -245,7 +245,7 @@ async function recognizeImage(imageId: string) {
       messages.value.push({
         id: `recognize_${Date.now()}`,
         role: 'assistant',
-        content: `✅ 识别成功！已添加跑步记录：\n📅 日期：${result.date}\n🏃 距离：${result.distance} km\n⏱️ 时长：${result.duration}\n⚡ 配速：${result.pace}\n❤️ 心率：${result.avgHeartRate || '-'} bpm\n🚶 步频：${result.cadence || '-'} 步/分钟`,
+        content: `✅ 识别成功！已添加跑步记录：\n📅 日期：${result.date}\n🏃 距离：${result.distance} km\n⏱️ 时长：${result.duration}\n⚡ 配速：${result.pace}\n❤️ 心率：${result.avgHeartRate || '-'} bpm\n🚶 步频：${result.cadence || '-'} 步/分钟\n📏 步幅：${result.avgStride || '-'} cm`,
         timestamp: Date.now()
       })
       
