@@ -59,7 +59,7 @@ export const ragTool: Tool = {
       if (knowledgeSources.length === 0) {
         responseMessage = `抱歉，没有找到关于"${query}"的相关知识。\n\n您可以尝试：\n• 使用更通用的关键词\n• 换一种表述方式\n• 询问其他跑步相关问题`
       } else {
-        responseMessage += `━━━━━━━━━━━━━━━━━━━━━━━\n📖 信息来源：${knowledgeSources.join(' + ')}`
+        responseMessage += `━━━━━━━━━━━━━━━━━━━━━━━\n📖 信息来源：${knowledgeSources.join(' + ')}。`
       }
 
       return {
