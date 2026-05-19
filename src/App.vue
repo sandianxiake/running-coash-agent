@@ -1954,7 +1954,7 @@ function askQuestion(question: string) {
 /* 图片预览区域优化 */
 .image-preview {
   position: fixed;
-  bottom: 85px;
+  bottom: 62px;
   left: 0;
   right: 0;
   display: flex;
