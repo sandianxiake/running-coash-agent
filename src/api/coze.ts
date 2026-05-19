@@ -155,7 +155,7 @@ export function convertToRunningRecord(result: SimpleRunningData) {
     pace: normalizePace(result.pace),
     avgHeartRate: result.avgHeartRate,
     cadence: result.cadence,
-    avgStride: result.avgStride,
+    stride: result.avgStride,
     feeling: '一般',
   }
 }
