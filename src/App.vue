@@ -680,7 +680,8 @@ function updatePlanChart() {
     legend: {
       bottom: 10,
       left: 'center',
-      itemGap: 40
+      itemGap: 40,
+      textStyle: { fontSize: 10 }
     },
     series: [{
       type: 'pie',
