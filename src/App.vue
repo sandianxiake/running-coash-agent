@@ -890,6 +890,14 @@ async function sendMessage() {
 
   // 检测是否需要录入跑步数据
   if (needsRecordInput(text)) {
+    // 先添加用户消息
+    messages.value.push({
+      id: `user_${Date.now()}`,
+      role: 'user',
+      content: text,
+      timestamp: Date.now()
+    })
+    scrollToBottom()
     openRecordForm()
     return
   }
