@@ -679,7 +679,7 @@ function updatePlanChart() {
     },
     legend: {
       right: 10,
-      top: 'center',
+      bottom: 20,
       orient: 'vertical',
       itemGap: 15,
       textStyle: { fontSize: 10 }
@@ -687,7 +687,7 @@ function updatePlanChart() {
     series: [{
       type: 'pie',
       radius: ['35%', '60%'],
-      center: ['50%', '50%'],
+      center: ['40%', '52%'],
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 8,
