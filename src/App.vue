@@ -31,6 +31,7 @@ const uploadedImages = ref<{ id: string; url: string; name: string }[]>([])
 const imageInputRef = ref<HTMLInputElement | null>(null)
 const isRecognizing = ref(false)
 const recognizingImageId = ref<string | null>(null)
+const isImageLoading = ref(false)
 
 // 图表引用
 const weeklyChartRef = ref<HTMLDivElement | null>(null)
@@ -226,6 +227,7 @@ async function recognizeImage(imageId: string) {
 
   isRecognizing.value = true
   recognizingImageId.value = imageId
+  isImageLoading.value = true
 
   try {
     // 调用扣子工作流识别图片
@@ -268,16 +270,11 @@ async function recognizeImage(imageId: string) {
   } finally {
     isRecognizing.value = false
     recognizingImageId.value = null
+    isImageLoading.value = false
   }
 }
 
-// 一键识别所有图片
-async function recognizeAllImages() {
-  for (const image of [...uploadedImages.value]) {
-    await recognizeImage(image.id)
-  }
-}
-
+// 一键识别所有图片已移除
 // 消息列表滚动引用
 const messagesRef = ref<HTMLDivElement | null>(null)
 
@@ -1126,16 +1123,7 @@ function askQuestion(question: string) {
         </button>
       </div>
       
-      <!-- 识别全部按钮 -->
-      <button 
-        v-if="uploadedImages.length > 0"
-        @click="recognizeAllImages" 
-        class="recognize-btn"
-        :disabled="isRecognizing"
-        :title="'识别 ' + uploadedImages.length + ' 张图片'"
-      >
-        {{ isRecognizing ? '识别中...' : '🚀 识别全部' }}
-      </button>
+      <!-- 识别全部按钮已移除 -->
       
       <textarea
         v-model="inputText"
@@ -1177,12 +1165,19 @@ function askQuestion(question: string) {
       ref="imageInputRef"
       type="file"
       accept="image/*"
-      multiple
       @change="handleImageSelect"
       style="display: none"
     />
 
-    <!-- 用户资料弹窗 -->
+    
+    <!-- 图片识别 Loading -->
+    <van-overlay :show="isImageLoading" :z-index="999">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+        <van-loading type="spinner" size="48px" color="#07c160">识别中...</van-loading>
+      </div>
+    </van-overlay>
+
+<!-- 用户资料弹窗 -->
     <van-popup v-model:show="showProfilePopup" position="bottom" round :style="{ height: 'auto', maxHeight: '85vh' }" :close-on-click-overlay="false">
       <div class="profile-form">
         <div class="form-header">
