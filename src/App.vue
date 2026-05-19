@@ -1153,7 +1153,7 @@ function askQuestion(question: string) {
             :disabled="isRecognizing"
             :title="'识别这张图片'"
           >
-            {{ recognizingImageId === img.id ? '识别中...' : '🔍 识别' }}
+            {{ recognizingImageId === img.id ? '识别中...' : '识别' }}
           </button>
           <button class="remove-btn" @click="removeImage(img.id)" title="移除">×</button>
         </div>
@@ -1954,7 +1954,7 @@ function askQuestion(question: string) {
 /* 图片预览区域优化 */
 .image-preview {
   position: fixed;
-  bottom: 60px;
+  bottom: 85px;
   left: 0;
   right: 0;
   display: flex;
