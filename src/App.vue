@@ -678,7 +678,7 @@ function updatePlanChart() {
       formatter: '{b}: {c}km ({d}%)'
     },
     legend: {
-      bottom: 10,
+      bottom: 50,
       left: 'center',
       itemGap: 40,
       textStyle: { fontSize: 10 }
