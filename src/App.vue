@@ -18,7 +18,7 @@ const profileForm = ref({
   abilityLevel: '初学者',
   injuryHistory: ''
 })
-const abilityLevels = ['初学者', '入门', '中级', '高级']
+const abilityLevels = ['初学者', '有经验', '进阶', '精英']
 const showAbilityPicker = ref(false)
 
 const messages = ref<Message[]>([])
@@ -1183,98 +1183,101 @@ function askQuestion(question: string) {
     />
 
     <!-- 用户资料弹窗 -->
-    <van-popup v-model:show="showProfilePopup" position="bottom" round :style="{ height: 'auto' }" :close-on-click-overlay="false">
-      <div class="record-form">
+    <van-popup v-model:show="showProfilePopup" position="bottom" round :style="{ height: 'auto', maxHeight: '85vh' }" :close-on-click-overlay="false">
+      <div class="profile-form">
         <div class="form-header">
           <h3>完善个人资料</h3>
         </div>
-        <p class="form-tip">为了给你更精准的训练建议，请先完善以下信息：</p>
+        <p class="form-tip">为了给你更精准的训练建议，请先完善信息</p>
 
-        <div class="form-item">
-          <label>昵称 *</label>
-          <van-field v-model="profileForm.nickname" placeholder="给自己起个名字" />
+        <div class="form-row-2">
+          <div class="form-item">
+            <label>昵称 *</label>
+            <van-field v-model="profileForm.nickname" placeholder="昵称" size="small" />
+          </div>
+          <div class="form-item">
+            <label>性别 *</label>
+            <van-radio-group v-model="profileForm.gender" direction="horizontal" size="small">
+              <van-radio name="男" shape="square">男</van-radio>
+              <van-radio name="女" shape="square">女</van-radio>
+            </van-radio-group>
+          </div>
         </div>
 
-        <div class="form-item">
-          <label>性别 *</label>
-          <van-radio-group v-model="profileForm.gender" direction="horizontal">
-            <van-radio name="男">男</van-radio>
-            <van-radio name="女">女</van-radio>
-          </van-radio-group>
-        </div>
-
-        <div class="form-row">
+        <div class="form-row-3">
           <div class="form-item">
             <label>年龄 *</label>
-            <van-field v-model.number="profileForm.age" type="number" placeholder="岁" />
+            <van-field v-model.number="profileForm.age" type="number" placeholder="岁" size="small" />
           </div>
           <div class="form-item">
             <label>身高 *</label>
-            <van-field v-model.number="profileForm.height" type="number" placeholder="cm" />
+            <van-field v-model.number="profileForm.height" type="number" placeholder="cm" size="small" />
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-item">
             <label>体重 *</label>
-            <van-field v-model.number="profileForm.weight" type="number" placeholder="kg" />
-          </div>
-          <div class="form-item">
-            <label>能力水平 *</label>
-            <van-field v-model="profileForm.abilityLevel" is-link readonly placeholder="选择能力水平" @click="showAbilityPicker = true" />
+            <van-field v-model.number="profileForm.weight" type="number" placeholder="kg" size="small" />
           </div>
         </div>
 
-        <div class="form-item">
-          <label>伤病史</label>
-          <van-field v-model="profileForm.injuryHistory" type="textarea" rows="2" placeholder="如有伤病史请填写，如：右膝旧伤" />
+        <div class="form-row-2">
+          <div class="form-item">
+            <label>能力水平 *</label>
+            <van-field v-model="profileForm.abilityLevel" is-link readonly placeholder="选择" size="small" @click="showAbilityPicker = true" />
+          </div>
+          <div class="form-item">
+            <label>伤病史</label>
+            <van-field v-model="profileForm.injuryHistory" placeholder="无" size="small" />
+          </div>
         </div>
 
         <van-action-sheet v-model:show="showAbilityPicker" :actions="abilityLevels.map(name => ({ name }))" @select="(action) => { profileForm.abilityLevel = action.name; showAbilityPicker = false }" />
 
-        <button class="submit-btn" @click="saveProfile">保存资料</button>
+        <button class="submit-btn" @click="saveProfile">保存</button>
       </div>
     </van-popup>
 
     <!-- 手动录入跑步数据弹窗 -->
-    <van-popup v-model:show="showRecordForm" position="bottom" round :style="{ height: 'auto' }">
+    <van-popup v-model:show="showRecordForm" position="bottom" round :style="{ height: 'auto', maxHeight: '85vh' }" :close-on-click-overlay="false">
       <div class="record-form">
-        <div class="form-header">
-          <h3>录入跑步数据</h3>
-          <button class="close-btn" @click="showRecordForm = false">×</button>
+        <div class="form-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="margin: 0;">录入跑步数据</h3>
+          <span class="close-icon" @click="showRecordForm = false">×</span>
         </div>
 
-        <div class="form-item">
-          <label>日期 *</label>
-          <van-field v-model="recordForm.runningDate" type="date" placeholder="选择日期" />
+        <div class="form-row-2">
+          <div class="form-item">
+            <label>日期 *</label>
+            <van-field v-model="recordForm.runningDate" type="date" placeholder="选择日期" size="small" />
+          </div>
+          <div class="form-item">
+            <label>距离(km) *</label>
+            <van-field v-model.number="recordForm.distance" type="number" placeholder="公里" size="small" />
+          </div>
         </div>
 
-        <div class="form-item">
-          <label>距离（公里）*</label>
-          <van-field v-model="recordForm.distance" type="number" placeholder="如：10" />
+        <div class="form-row-2">
+          <div class="form-item">
+            <label>时长(分钟) *</label>
+            <van-field v-model.number="recordForm.duration" type="number" placeholder="分钟" size="small" />
+          </div>
+          <div class="form-item">
+            <label>配速 *</label>
+            <van-field v-model="recordForm.pace" placeholder="如 6:30" size="small" />
+          </div>
         </div>
 
-        <div class="form-item">
-          <label>时长（分钟）*</label>
-          <van-field v-model="recordForm.duration" type="number" placeholder="如：55" />
+        <div class="form-row-2">
+          <div class="form-item">
+            <label>心率(bpm) *</label>
+            <van-field v-model.number="recordForm.avgHeartRate" type="number" placeholder="次/分钟" size="small" />
+          </div>
+          <div class="form-item">
+            <label>步频(spm) *</label>
+            <van-field v-model.number="recordForm.cadence" type="number" placeholder="步/分钟" size="small" />
+          </div>
         </div>
 
-        <div class="form-item">
-          <label>配速（如 6:15）*</label>
-          <van-field v-model="recordForm.pace" placeholder="格式：6:15" />
-        </div>
-
-        <div class="form-item">
-          <label>心率（次/分钟）*</label>
-          <van-field v-model="recordForm.avgHeartRate" type="number" placeholder="如：145" />
-        </div>
-
-        <div class="form-item">
-          <label>步频（步/分钟）*</label>
-          <van-field v-model="recordForm.cadence" type="number" placeholder="如：175" />
-        </div>
-
-        <van-button type="primary" block @click="submitRecord">保存</van-button>
+        <button class="submit-btn" @click="submitRecord">保存</button>
       </div>
     </van-popup>
   </div>
@@ -1628,7 +1631,61 @@ function askQuestion(question: string) {
 
 /* 录入表单样式 */
 .record-form {
-  padding: 20px;
+  padding: 16px;
+}
+.profile-form {
+  padding: 16px;
+}
+.profile-form .form-tip {
+  color: #969799;
+  font-size: 13px;
+  margin: -8px 0 12px;
+}
+.profile-form .form-row-2,
+.profile-form .form-row-3 {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.profile-form .form-row-2 .form-item,
+.profile-form .form-row-3 .form-item {
+  flex: 1;
+  margin-bottom: 0;
+}
+.profile-form .form-item label {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.record-form .form-header {
+  margin-bottom: 12px;
+}
+.record-form .form-row-2 {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.record-form .form-row-2 .form-item {
+  flex: 1;
+  margin-bottom: 0;
+}
+.record-form .form-item label {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.record-form .close-icon {
+  font-size: 20px;
+  color: #969799;
+  cursor: pointer;
+}
+.submit-btn {
+  width: 100%;
+  padding: 10px;
+  background: #07c160;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  margin-top: 8px;
 }
 
 .form-tip {
