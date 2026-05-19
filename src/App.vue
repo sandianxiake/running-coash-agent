@@ -1788,8 +1788,9 @@ function askQuestion(question: string) {
 
 .input-area textarea {
   flex: 1;
-  height: 44px;
-  padding: 0 6px;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 10px 12px;
   border: 1px solid #ddd;
   border-radius: 12px;
   resize: none;
@@ -1798,7 +1799,6 @@ function askQuestion(question: string) {
   outline: none;
   line-height: 1.4;
   transition: border-color 0.2s;
-  box-sizing: border-box;
 }
 
 .input-area textarea:focus {
