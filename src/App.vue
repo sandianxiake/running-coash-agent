@@ -678,7 +678,7 @@ function updatePlanChart() {
       formatter: '{b}: {c}km ({d}%)'
     },
     legend: {
-      bottom: 50,
+      bottom: 60,
       left: 'center',
       itemGap: 40,
       textStyle: { fontSize: 10 }
@@ -686,7 +686,7 @@ function updatePlanChart() {
     series: [{
       type: 'pie',
       radius: ['35%', '60%'],
-      center: ['50%', '55%'],
+      center: ['50%', '50%'],
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 8,
@@ -695,7 +695,8 @@ function updatePlanChart() {
       },
       label: {
         show: true,
-        formatter: '{b}\n{c}km'
+        formatter: '{b}\n{c}km',
+        fontSize: 10
       },
       data: [
         { value: plan.weeklyPlans.slice(0, currentWeek).reduce((sum: number, w: any) => sum + w.totalMileage, 0), name: '已完成', itemStyle: { color: '#4CAF50' } },
