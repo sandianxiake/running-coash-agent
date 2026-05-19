@@ -687,7 +687,7 @@ function updatePlanChart() {
     series: [{
       type: 'pie',
       radius: ['35%', '60%'],
-      center: ['40%', '52%'],
+      center: ['40%', '54%'],
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 8,
