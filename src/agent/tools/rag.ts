@@ -27,6 +27,7 @@ export const ragTool: Tool = {
 
     try {
       const searchResult = await webSearchService.search(query, top_k)
+      console.log("RAG search result:", JSON.stringify(searchResult, null, 2))
 
       let responseMessage = ''
       let knowledgeSources: string[] = []
