@@ -1062,6 +1062,10 @@ function askQuestion(question: string) {
               >年</button>
             </div>
 
+            <!-- 六边形战士 -->
+            <div class="chart-title">🏆 六边形战士</div>
+            <div class="chart-wrapper" ref="radarChartRef"></div>
+
             <div class="chart-title">📈 {{ periodLabel }}跑量统计</div>
             <div class="chart-wrapper" ref="weeklyChartRef"></div>
             
@@ -1070,10 +1074,6 @@ function askQuestion(question: string) {
             
             <div class="chart-title">🎯 训练计划进度</div>
             <div class="chart-wrapper" ref="planChartRef"></div>
-
-            <!-- 六边形战士 -->
-            <div class="chart-title">🏆 六边形战士</div>
-            <div class="chart-wrapper" ref="radarChartRef"></div>
           </div>
         </div>
       </div>
