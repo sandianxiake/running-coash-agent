@@ -41,18 +41,6 @@ export const ragTool: Tool = {
         knowledgeSources.push('内置知识库')
       }
 
-      if (searchResult.externalResults && searchResult.externalResults.length > 0) {
-        responseMessage += '🌐 网络搜索结果：\n\n'
-        searchResult.externalResults.forEach((result, index) => {
-          responseMessage += `**${result.title}**\n`
-          if (result.url) {
-            responseMessage += `   来源：${result.url}\n`
-          }
-          responseMessage += `   ${result.snippet}\n\n`
-        })
-        knowledgeSources.push('网络搜索')
-      }
-
       if (searchResult.summary) {
         responseMessage += `💡 网络摘要：${searchResult.summary}\n\n`
       }
