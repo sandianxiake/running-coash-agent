@@ -1478,6 +1478,7 @@ function askQuestion(question: string) {
 .period-switch {
   display: flex;
   gap: 8px;
+  margin-top: 24px;
   margin-bottom: 12px;
   justify-content: center;
 }
