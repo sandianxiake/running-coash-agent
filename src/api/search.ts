@@ -488,7 +488,7 @@ class WebSearchService {
   }
 
   // 混合搜索（关键词 + 语义）
-  async searchHybrid(query: string, topK: number = 1): Promise<string[]> {
+  async searchHybrid(query: string, topK: number = 1): Promise<{ content: string[]; topics: string[] }> {
     // 关键词搜索结果
     const keywordResults = this.searchByKeyword(query, topK * 3)
     
@@ -523,7 +523,10 @@ class WebSearchService {
       .sort((a, b) => b.score - a.score)
       .slice(0, topK)
 
-    return results.map(r => `[${r.item.topic}]:\n${r.item.content}`)
+    return {
+      content: results.map(r => `[${r.item.topic}]:\n${r.item.content}`),
+      topics: results.map(r => r.item.topic)
+    }
   }
 
   // 搜索内置知识库（兼容旧接口）
