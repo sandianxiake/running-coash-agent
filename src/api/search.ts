@@ -603,8 +603,13 @@ class WebSearchService {
 
     try {
       const external = await this.searchExternal(query)
-      if (external.results.length > 0) {
+      // 兼容两种返回格式：有results或只有summary
+      if (external.results && external.results.length > 0) {
         externalResults = external.results
+        summary = external.summary
+        source = builtInKnowledge.length > 0 ? 'hybrid' : 'external'
+      } else if (external.summary) {
+        // 只有summary的情况
         summary = external.summary
         source = builtInKnowledge.length > 0 ? 'hybrid' : 'external'
       }
