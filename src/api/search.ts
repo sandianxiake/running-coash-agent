@@ -618,8 +618,8 @@ class WebSearchService {
     }
 
     return {
-      builtInKnowledge,
-      topics,
+      builtInKnowledge: builtInKnowledge || [],
+      topics: topics || [],
       externalResults,
       summary,
       source

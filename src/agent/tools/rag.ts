@@ -32,7 +32,7 @@ export const ragTool: Tool = {
       let knowledgeSources: string[] = []
 
       // 构建响应消息
-      if (searchResult.builtInKnowledge.length > 0) {
+      if (searchResult.builtInKnowledge && searchResult.builtInKnowledge.length > 0) {
         responseMessage += '📚 专业知识：\n\n'
         searchResult.builtInKnowledge.forEach((knowledge, index) => {
           responseMessage += `${knowledge}\n\n`
