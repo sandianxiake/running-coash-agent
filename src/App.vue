@@ -1046,6 +1046,10 @@ function askQuestion(question: string) {
 
           <!-- 图表区域 -->
           <div class="charts-container" v-if="stats.totalRuns > 0">
+            <!-- 六边形战士 -->
+            <div class="chart-title">🏆 六边形战士</div>
+            <div class="chart-wrapper" ref="radarChartRef"></div>
+
             <!-- 周期切换 -->
             <div class="period-switch">
               <button 
@@ -1061,10 +1065,6 @@ function askQuestion(question: string) {
                 @click="switchPeriod('year')"
               >年</button>
             </div>
-
-            <!-- 六边形战士 -->
-            <div class="chart-title">🏆 六边形战士</div>
-            <div class="chart-wrapper" ref="radarChartRef"></div>
 
             <div class="chart-title">📈 {{ periodLabel }}跑量统计</div>
             <div class="chart-wrapper" ref="weeklyChartRef"></div>
