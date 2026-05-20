@@ -26,6 +26,9 @@ const inputText = ref('')
 const isLoading = ref(false)
 const agent = getAgent()
 
+// 已显示的知识库主题（避免重复显示）
+const shownTopics = new Set<string>()
+
 // 图片上传相关
 const uploadedImages = ref<{ id: string; url: string; name: string }[]>([])
 const imageInputRef = ref<HTMLInputElement | null>(null)
@@ -944,6 +947,10 @@ async function sendMessage() {
         const msg = messages.value.find(m => m.id === assistantMsgId)
         if (msg && event.data.result?.message) {
           msg.content = event.data.result.message
+        }
+        // 记录已显示的知识库主题（避免重复）
+        if (event.data.result?.topics && Array.isArray(event.data.result.topics)) {
+          event.data.result.topics.forEach((topic: string) => shownTopics.add(topic))
         }
         await nextTick()
         refreshData()

@@ -35,7 +35,7 @@ export const ragTool: Tool = {
       if (searchResult.builtInKnowledge.length > 0) {
         responseMessage += '📚 专业知识：\n\n'
         searchResult.builtInKnowledge.forEach((knowledge, index) => {
-          responseMessage += `${index + 1}. ${knowledge}\n\n`
+          responseMessage += `${knowledge}\n\n`
         })
         knowledgeSources.push('内置知识库')
       }
@@ -43,7 +43,7 @@ export const ragTool: Tool = {
       if (searchResult.externalResults && searchResult.externalResults.length > 0) {
         responseMessage += '🌐 网络搜索结果：\n\n'
         searchResult.externalResults.forEach((result, index) => {
-          responseMessage += `${index + 1}. **${result.title}**\n`
+          responseMessage += `**${result.title}**\n`
           if (result.url) {
             responseMessage += `   来源：${result.url}\n`
           }
@@ -71,6 +71,8 @@ export const ragTool: Tool = {
           externalResults: searchResult.externalResults,
           summary: searchResult.summary,
           source: searchResult.source,
+          // 记录本次返回的主题，用于去重
+          topics: searchResult.topics || [],
           message: responseMessage
         }
       }

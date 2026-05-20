@@ -528,7 +528,8 @@ class WebSearchService {
 
   // 搜索内置知识库（兼容旧接口）
   async searchBuiltInKnowledge(query: string, topK: number = 1): Promise<string[]> {
-    return this.searchHybrid(query, topK)
+    const result = await this.searchHybrid(query, topK)
+    return result.content
   }
 
   // 搜索接口（使用 DeepSeek API 进行知识增强）
@@ -585,12 +586,15 @@ class WebSearchService {
   // 统一搜索接口（智能降级）
   async search(query: string, topK: number = 1): Promise<{
     builtInKnowledge: string[];
+    topics: string[];
     externalResults?: { summary: string }[];
     summary?: string;
     source: 'internal' | 'external' | 'hybrid';
   }> {
     // 搜索内置知识库（混合检索：关键词 + Chat API 语义）
-    const builtInKnowledge = await this.searchHybrid(query, topK)
+    const internalResult = await this.searchHybrid(query, topK)
+    const builtInKnowledge = internalResult.content
+    const topics = internalResult.topics
 
     // 尝试外部搜索
     let externalResults = undefined
@@ -610,6 +614,7 @@ class WebSearchService {
 
     return {
       builtInKnowledge,
+      topics,
       externalResults,
       summary,
       source
