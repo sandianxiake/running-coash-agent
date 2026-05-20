@@ -7,10 +7,6 @@
 const DEEPSEEK_API_KEY = 'sk-a551054c8b714b30ba51885a0a74ac06'
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com'
 
-// DeepSeek API 配置
-const EMBEDDING_MODEL = 'deepseek-chat'
-const EMBEDDING_DIM = 1536  // DeepSeek embedding 维度
-
 // 内置跑步知识库（精简版，约35个主题）
 const RUNNING_KNOWLEDGE = [
   // === 基础篇 ===
