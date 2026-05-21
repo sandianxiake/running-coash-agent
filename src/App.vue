@@ -1352,7 +1352,7 @@ function askQuestion(question: string) {
 }
 
 .data-btn {
-  padding: 6px 12px;
+  padding: 4px 8px;
   font-size: 12px;
   background: #2196F3;
   color: white;
@@ -1362,7 +1362,7 @@ function askQuestion(question: string) {
 }
 
 .reset-btn {
-  padding: 6px 12px;
+  padding: 4px 8px;
   font-size: 12px;
   background: #fff;
   color: #999;
@@ -1372,7 +1372,7 @@ function askQuestion(question: string) {
 }
 
 .clear-btn {
-  padding: 6px 12px;
+  padding: 4px 8px;
   font-size: 12px;
   background: #f5f5f5;
   border: none;
