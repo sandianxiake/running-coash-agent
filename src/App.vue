@@ -1348,11 +1348,14 @@ function askQuestion(question: string) {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 .data-btn {
-  padding: 4px 8px;
+  padding: 0 6px;
+  min-width: 64px;
+  height: 32px;
   font-size: 12px;
   background: #2196F3;
   color: white;
@@ -1362,7 +1365,9 @@ function askQuestion(question: string) {
 }
 
 .reset-btn {
-  padding: 4px 8px;
+  padding: 0 6px;
+  min-width: 64px;
+  height: 32px;
   font-size: 12px;
   background: #fff;
   color: #999;
@@ -1372,13 +1377,16 @@ function askQuestion(question: string) {
 }
 
 .clear-btn {
-  padding: 4px 8px;
+  padding: 0 6px;
+  min-width: 64px;
+  height: 32px;
   font-size: 12px;
   background: #f5f5f5;
   border: none;
   border-radius: 16px;
   cursor: pointer;
   color: #666;
+  margin-top: 0;
 }
 
 .clear-btn:hover {
@@ -1761,7 +1769,6 @@ function askQuestion(question: string) {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-  margin-top: 8px;
 }
 
 .form-tip {
