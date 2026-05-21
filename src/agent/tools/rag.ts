@@ -30,27 +30,23 @@ export const ragTool: Tool = {
       console.log("RAG search result:", JSON.stringify(searchResult, null, 2))
 
       let responseMessage = ''
-      let knowledgeSources: string[] = []
 
-      // 构建响应消息
+      // 合并所有搜索结果
+      const allInfo: string[] = []
+      
       if (searchResult.builtInKnowledge && searchResult.builtInKnowledge.length > 0) {
-        responseMessage += '📚 专业知识：\n\n'
-        searchResult.builtInKnowledge.forEach((knowledge, index) => {
-          responseMessage += `${knowledge}\n\n`
-        })
-        knowledgeSources.push('内置知识库')
+        allInfo.push(...searchResult.builtInKnowledge)
       }
-
       if (searchResult.summary) {
-        responseMessage += `💡 网络摘要：${searchResult.summary}\n\n`
+        allInfo.push(searchResult.summary)
       }
-
-      if (knowledgeSources.length === 0) {
-        responseMessage = `抱歉，没有找到关于"${query}"的相关知识。\n\n您可以尝试：\n• 使用更通用的关键词\n• 换一种表述方式\n• 询问其他跑步相关问题`
+      
+      if (allInfo.length > 0) {
+        // 合并内容，不要标签，让 AI 自己提炼
+        responseMessage = allInfo.join('\n\n')
       } else {
-        responseMessage += `━━━━━━━━━━━━━━━━━━━━━━━\n📖 信息来源：${knowledgeSources.join(' + ')}。`
+        responseMessage = `没有找到关于"${query}"的相关知识。`
       }
-
       return {
         success: true,
         data: {
