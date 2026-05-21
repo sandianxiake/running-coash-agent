@@ -51,7 +51,6 @@ export const ragTool: Tool = {
         success: true,
         data: {
           query,
-          knowledgeSources,
           builtInKnowledge: searchResult.builtInKnowledge,
           externalResults: searchResult.externalResults,
           summary: searchResult.summary,
