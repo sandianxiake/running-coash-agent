@@ -1709,7 +1709,7 @@ function askQuestion(question: string) {
   padding-right: 20px;
 }
 .record-form .form-row-2 .date-field :deep(.van-field__right-icon) {
-  right: -4px;
+  right: -24px;
 }
 .record-form .form-row-2 .form-item {
   flex: 1;
