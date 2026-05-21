@@ -1377,7 +1377,7 @@ function askQuestion(question: string) {
 }
 
 .clear-btn {
-  padding: 0 6px;
+  padding: 0 15px;
   min-width: 64px;
   height: 32px;
   font-size: 12px;
@@ -1761,15 +1761,7 @@ function askQuestion(question: string) {
   font-size: 16px;
   margin-top: 12px;
 }
-.profile-form .clear-btn {
-  width: 100%;
-  padding: 0 15px;
-  background: #fff;
-  color: #999;
-  border: 1px solid #ddd;
-  border-radius: 16px;
-  font-size: 14px;
-}
+
 
 .form-tip {
   color: #666;
