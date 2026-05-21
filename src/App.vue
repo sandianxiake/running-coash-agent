@@ -95,12 +95,12 @@ const showDataPanel = ref(false)
 const showRecordForm = ref(false)
 const recordForm = ref({
   runningDate: new Date().toISOString().split('T')[0],
-  distance: '',
-  duration: '',
+  distance: undefined as number | undefined,
+  duration: undefined as number | undefined,
   pace: '',
-  avgHeartRate: '',
-  cadence: '',
-  avgStride: ''
+  avgHeartRate: undefined as number | undefined,
+  cadence: undefined as number | undefined,
+  avgStride: undefined as number | undefined
 })
 
 // 检测是否需要录入跑步数据
@@ -113,12 +113,12 @@ function needsRecordInput(text: string): boolean {
 function openRecordForm() {
   recordForm.value = {
     runningDate: new Date().toISOString().split('T')[0],
-    distance: '',
-    duration: '',
+    distance: undefined,
+    duration: undefined,
     pace: '',
-    avgHeartRate: '',
-    cadence: '',
-    avgStride: ''
+    avgHeartRate: undefined,
+    cadence: undefined,
+    avgStride: undefined
   }
   showRecordForm.value = true
 }
@@ -1706,7 +1706,7 @@ function askQuestion(question: string) {
   padding-left: 0;
 }
 .record-form .form-row-2 .date-field :deep(.van-field__control) {
-  padding-right: 20px;
+  padding-right: 32px;
 }
 .record-form .form-row-2 .date-field :deep(.van-field__right-icon) {
   right: -24px;
