@@ -11,7 +11,7 @@ import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, c
 const showProfilePopup = ref(false)
 const profileForm = ref({
   nickname: '',
-  gender: '' as '' | '男' | '女',
+  gender: '男' as '' | '男' | '女',
   age: undefined as number | undefined,
   height: undefined as number | undefined,
   weight: undefined as number | undefined,
