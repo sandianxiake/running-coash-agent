@@ -1761,13 +1761,13 @@ function askQuestion(question: string) {
   font-size: 16px;
   margin-top: 12px;
 }
-.clear-btn {
+.profile-form .clear-btn {
   width: 100%;
-  padding: 10px;
+  padding: 10px 0;
   background: #fff;
   color: #999;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 16px;
   font-size: 14px;
 }
 
