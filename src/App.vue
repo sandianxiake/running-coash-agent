@@ -5,7 +5,7 @@ import { generateQuickQuestions } from './api/agent'
 import { recognizeRunningData, convertToRunningRecord } from './api/coze'
 import { addRunningRecord } from './store/storage'
 import * as echarts from 'echarts'
-import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory, getUserProfile, setUserProfile, setUserPreferences } from './store/storage'
+import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, clearSessionMemory, getUserProfile, setUserProfile, setUserPreferences, clearAllData } from './store/storage'
 
 // 用户资料弹窗
 const showProfilePopup = ref(false)
@@ -150,6 +150,14 @@ function saveProfile() {
   
   showProfilePopup.value = false
   showToast('资料已保存')
+}
+
+// 清除所有数据
+function handleClearData() {
+  if (confirm('确定要清除所有数据吗？此操作不可恢复。')) {
+    clearAllData()
+    window.location.reload()
+  }
 }
 
 // 提交跑步记录
@@ -1247,6 +1255,7 @@ function askQuestion(question: string) {
         <van-action-sheet v-model:show="showAbilityPicker" :actions="abilityLevels.map(name => ({ name }))" @select="(action) => { profileForm.abilityLevel = action.name; showAbilityPicker = false }" />
 
         <button class="submit-btn" @click="saveProfile">保存</button>
+        <button class="clear-btn" @click="handleClearData">清除所有数据</button>
       </div>
     </van-popup>
 
@@ -1730,8 +1739,18 @@ function askQuestion(question: string) {
   background: #07c160;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 15px;
+  border-radius: 4px;
+  font-size: 16px;
+  margin-top: 12px;
+}
+.clear-btn {
+  width: 100%;
+  padding: 10px;
+  background: #fff;
+  color: #999;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
   margin-top: 8px;
 }
 
