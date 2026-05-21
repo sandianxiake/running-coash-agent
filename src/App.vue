@@ -1235,7 +1235,7 @@ function askQuestion(question: string) {
         </div>
 
         <div class="form-item">
-          <label>能力水平 *</label>
+          <label>能力 *</label>
           <van-field v-model="profileForm.abilityLevel" is-link readonly placeholder="选择" size="small" @click="showAbilityPicker = true" />
         </div>
 
