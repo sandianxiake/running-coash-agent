@@ -95,12 +95,12 @@ const showDataPanel = ref(false)
 const showRecordForm = ref(false)
 const recordForm = ref({
   runningDate: new Date().toISOString().split('T')[0],
-  distance: undefined as number | undefined,
-  duration: undefined as number | undefined,
+  distance: '',
+  duration: '',
   pace: '',
-  avgHeartRate: undefined as number | undefined,
-  cadence: undefined as number | undefined,
-  avgStride: undefined as number | undefined
+  avgHeartRate: '',
+  cadence: '',
+  avgStride: ''
 })
 
 // 检测是否需要录入跑步数据
@@ -113,12 +113,12 @@ function needsRecordInput(text: string): boolean {
 function openRecordForm() {
   recordForm.value = {
     runningDate: new Date().toISOString().split('T')[0],
-    distance: undefined,
-    duration: undefined,
+    distance: '',
+    duration: '',
     pace: '',
-    avgHeartRate: undefined,
-    cadence: undefined,
-    avgStride: undefined
+    avgHeartRate: '',
+    cadence: '',
+    avgStride: ''
   }
   showRecordForm.value = true
 }
@@ -1283,7 +1283,7 @@ function askQuestion(question: string) {
         <div class="form-row-2">
           <div class="form-item">
             <label>心率(bpm) *</label>
-            <van-field v-model.number="recordForm.avgHeartRate" type="number" placeholder="次/分钟" size="small" />
+            <van-field v-model.number="recordForm.avgHeartRate" type="number" name="heartRate" placeholder="次/分钟" size="small" />
           </div>
           <div class="form-item">
             <label>步频(spm) *</label>
