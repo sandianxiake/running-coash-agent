@@ -1763,7 +1763,7 @@ function askQuestion(question: string) {
 }
 .profile-form .clear-btn {
   width: 100%;
-  padding: 0 6px;
+  padding: 0 15px;
   background: #fff;
   color: #999;
   border: 1px solid #ddd;
