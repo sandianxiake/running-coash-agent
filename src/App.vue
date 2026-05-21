@@ -1261,7 +1261,7 @@ function askQuestion(question: string) {
         <div class="form-row-2">
           <div class="form-item">
             <label>日期 *</label>
-            <van-field v-model="recordForm.runningDate" type="date" placeholder="选择日期" size="small" />
+            <van-field v-model="recordForm.runningDate" type="date" placeholder="选择日期" size="small" class="date-field" />
           </div>
           <div class="form-item">
             <label>距离(km) *</label>
@@ -1701,6 +1701,9 @@ function askQuestion(question: string) {
   display: flex;
   gap: 12px;
   margin-bottom: 12px;
+}
+.record-form .form-row-2 .date-field {
+  padding-left: 0;
 }
 .record-form .form-row-2 .form-item {
   flex: 1;
