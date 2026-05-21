@@ -1705,6 +1705,12 @@ function askQuestion(question: string) {
 .record-form .form-row-2 .date-field {
   padding-left: 0;
 }
+.record-form .form-row-2 .date-field :deep(.van-field__control) {
+  padding-right: 20px;
+}
+.record-form .form-row-2 .date-field :deep(.van-field__right-icon) {
+  right: 4px;
+}
 .record-form .form-row-2 .form-item {
   flex: 1;
   margin-bottom: 0;
