@@ -11,11 +11,11 @@ import { getRunningRecords, getActivePlan, getSessionMemory, setSessionMemory, c
 const showProfilePopup = ref(false)
 const profileForm = ref({
   nickname: '',
-  gender: '男' as '男' | '女',
-  age: 30,
-  height: 170,
-  weight: 65,
-  abilityLevel: '初学者',
+  gender: '' as '' | '男' | '女',
+  age: undefined as number | undefined,
+  height: undefined as number | undefined,
+  weight: undefined as number | undefined,
+  abilityLevel: '',
   injuryHistory: ''
 })
 const abilityLevels = ['初学者', '有经验', '进阶', '精英']
@@ -1214,8 +1214,8 @@ function askQuestion(question: string) {
         <div class="form-item">
           <label>性别 *</label>
           <van-radio-group v-model="profileForm.gender" direction="horizontal" size="small">
-            <van-radio name="男" shape="square">男</van-radio>
-            <van-radio name="女" shape="square">女</van-radio>
+            <van-radio name="男">男</van-radio>
+            <van-radio name="女">女</van-radio>
           </van-radio-group>
         </div>
 
