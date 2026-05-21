@@ -1013,9 +1013,10 @@ function askQuestion(question: string) {
   <div class="app-container">
     <!-- 固定头部 -->
     <header class="header">
-      <h1>🏃 跑步教练 Agent</h1>
+      <h1>🏃 跑步教练</h1>
       <div class="header-actions">
         <button class="data-btn" @click="showDataPanel = true">📊 数据</button>
+        <button class="reset-btn" @click="handleClearData">重置</button>
         <button class="clear-btn" @click="clearChat">清空对话</button>
       </div>
     </header>
@@ -1255,7 +1256,6 @@ function askQuestion(question: string) {
         <van-action-sheet v-model:show="showAbilityPicker" :actions="abilityLevels.map(name => ({ name }))" @select="(action) => { profileForm.abilityLevel = action.name; showAbilityPicker = false }" />
 
         <button class="submit-btn" @click="saveProfile">保存</button>
-        <button class="clear-btn" @click="handleClearData">清除所有数据</button>
       </div>
     </van-popup>
 
@@ -1357,6 +1357,16 @@ function askQuestion(question: string) {
   background: #2196F3;
   color: white;
   border: none;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.reset-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #fff;
+  color: #999;
+  border: 1px solid #ddd;
   border-radius: 16px;
   cursor: pointer;
 }
