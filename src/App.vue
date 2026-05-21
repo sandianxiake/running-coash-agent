@@ -1690,8 +1690,8 @@ function askQuestion(question: string) {
 .profile-form .form-item .gender-radio {
   padding: 10px 15px;
 }
-.profile-form .form-item .van-radio__icon,
-.profile-form .form-item .van-radio__label {
+.profile-form .form-item :deep(.van-radio__icon),
+.profile-form .form-item :deep(.van-radio__label) {
   font-size: 14px;
 }
 .record-form .form-header {
