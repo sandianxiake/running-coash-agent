@@ -1213,7 +1213,7 @@ function askQuestion(question: string) {
 
         <div class="form-item">
           <label>性别 *</label>
-          <van-radio-group v-model="profileForm.gender" direction="horizontal" size="small">
+          <van-radio-group v-model="profileForm.gender" direction="horizontal" size="small" style="padding: 10px 15px;">
             <van-radio name="男">男</van-radio>
             <van-radio name="女">女</van-radio>
           </van-radio-group>
@@ -1686,6 +1686,10 @@ function askQuestion(question: string) {
 }
 .profile-form .form-item .van-radio-group {
   flex: 1;
+}
+.profile-form .form-item .van-radio__icon,
+.profile-form .form-item .van-radio__label {
+  font-size: 14px;
 }
 .record-form .form-header {
   margin-bottom: 12px;
